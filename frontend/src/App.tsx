@@ -23,7 +23,7 @@ interface TransactionStatus {
 }
 
 const INJECTIVE_EVM_PARAMS = {
-  chainId: "0x59f", // 1439 in hexadecimal
+  chainId: "0x59f",
   chainName: "Injective EVM",
   rpcUrls: ["https://k8s.testnet.json-rpc.injective.network/"],
   nativeCurrency: {
@@ -38,7 +38,10 @@ function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState("");
   const [balance, setBalance] = useState(0);
-   const [isTransferring, setIsTransferring] = useState(false);
+  const [isTransferring, setIsTransferring] = useState(false);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
+  const [isApproved, setIsApproved] = useState(false);
   const [txStatus, setTxStatus] = useState<TransactionStatus>({
     type: null,
     message: "",
@@ -50,6 +53,17 @@ function App() {
     address: "",
     amount: "",
   });
+  const [vaultAmount, setVaultAmount] = useState("");
+
+  const handleApprove = async () => {
+    setIsApproving(true);
+    // TODO: Implement wINJ approval logic
+    setTimeout(() => {
+      setIsApproving(false);
+      setShowApprovalModal(false);
+      setIsApproved(true);
+    }, 2000);
+  };
 
   const connectMetaMask = async () => {
     if (typeof window.ethereum === "undefined") {
@@ -60,24 +74,20 @@ function App() {
     const provider = new BrowserProvider(window.ethereum);
 
     try {
-      // First, request accounts
       const accounts = await provider.send("eth_requestAccounts", []);
       console.log("Connected accounts:", accounts);
-      // Check current chain ID
+
       const currentChainId = await window.ethereum.request({
         method: "eth_chainId",
       });
 
-      // Only switch/add network if not already on Injective EVM
       if (currentChainId !== INJECTIVE_EVM_PARAMS.chainId) {
         try {
-          // Try to switch to the network first
           await window.ethereum.request({
             method: "wallet_switchEthereumChain",
             params: [{ chainId: INJECTIVE_EVM_PARAMS.chainId }],
           });
         } catch (switchError: any) {
-          // If network doesn't exist (error code 4902), add it
           if (switchError.code === 4902) {
             await window.ethereum.request({
               method: "wallet_addEthereumChain",
@@ -111,6 +121,8 @@ function App() {
       if (result && result.address) {
         setIsConnected(true);
         setWalletAddress(result.address);
+        // Show approval modal after successful connection
+        setShowApprovalModal(true);
       }
     } catch (error) {
       console.error("Failed to connect wallet:", error);
@@ -123,6 +135,7 @@ function App() {
   const handleDisconnect = () => {
     setIsConnected(false);
     setWalletAddress("");
+    setIsApproved(false);
   };
 
   const truncateAddress = (addr: string) => {
@@ -132,22 +145,68 @@ function App() {
 
   const [activeTab, setActiveTab] = useState<"INJ" | "wINJ">("INJ");
 
-  const handleDeposit = () => {
-    console.log("Deposit clicked");
+  const handleDeposit = async () => {
+    if (!vaultAmount) {
+      alert("Please enter an amount");
+      return;
+    }
+
+    const amount = parseFloat(vaultAmount);
+    if (isNaN(amount) || amount <= 0) {
+      alert("Please enter a valid amount");
+      return;
+    }
+
+    if (amount > balance) {
+      alert("Insufficient balance");
+      return;
+    }
+
+    console.log("Depositing:", amount, "INJ");
+    // TODO: Implement deposit logic
+    
+    // Clear input after successful deposit
+    setVaultAmount("");
   };
 
-  const handleWithdraw = () => {
-    console.log("Withdraw clicked");
+  const handleWithdraw = async () => {
+    if (!vaultAmount) {
+      alert("Please enter an amount");
+      return;
+    }
+
+    const amount = parseFloat(vaultAmount);
+    if (isNaN(amount) || amount <= 0) {
+      alert("Please enter a valid amount");
+      return;
+    }
+
+    if (amount > state.winjBalance) {
+      alert("Insufficient wINJ balance in vault");
+      return;
+    }
+
+    console.log("Withdrawing:", amount, "wINJ");
+    // TODO: Implement withdraw logic
+    
+    // Clear input after successful withdrawal
+    setVaultAmount("");
   };
 
- const handleTransfer = async () => {
+  const handleTransfer = async () => {
     if (!isConnected) {
-      setTxStatus({ type: "error", message: "Please connect your wallet first" });
+      setTxStatus({
+        type: "error",
+        message: "Please connect your wallet first",
+      });
       return;
     }
 
     if (!state.address || !state.amount) {
-      setTxStatus({ type: "error", message: "Please enter both address and amount" });
+      setTxStatus({
+        type: "error",
+        message: "Please enter both address and amount",
+      });
       return;
     }
 
@@ -206,102 +265,201 @@ function App() {
     }
   };
 
+  // Check if buttons should be disabled
+  const buttonsDisabled = !isConnected || !isApproved;
+
   return (
-    <div className="vault-container">
-      <div className="vault-header">
-        <h1 className="vault-title">Vault</h1>
-        {!isConnected ? (
-          <div className="wallet-info" onClick={handleConnect}>
-            Connect
-          </div>
-        ) : (
-          <div className="wallet-info" onClick={handleDisconnect}>
-            {balance} inj | {truncateAddress(walletAddress)}
-          </div>
-        )}
-      </div>
-
-      <div className="vault-content">
-        <div className="left-panel">
-          <div className="balance-section">
-            <h2 className="total-title">Total in Vault</h2>
-            <div className="total-amount">
-              {state.totalBalance.toFixed(2)}wINJ
-            </div>
-
-            <div className="button-group">
-              <button className="action-button" onClick={handleDeposit}>
-                Deposit
-              </button>
-              <button className="action-button" onClick={handleWithdraw}>
-                Withdraw
+    <>
+      {showApprovalModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2 className="modal-title">Approve wINJ Spending</h2>
+            <p className="modal-description">
+              To use this vault, you need to approve spending of wINJ tokens.
+              This is required to continue.
+            </p>
+            <div className="modal-buttons">
+              <button
+                className="modal-button modal-button-primary"
+                onClick={handleApprove}
+                disabled={isApproving}
+              >
+                {isApproving ? "Approving..." : "Approve"}
               </button>
             </div>
           </div>
         </div>
+      )}
+      <div className="vault-container">
+        <div className="vault-header">
+          <h1 className="vault-title">Vault</h1>
+          {!isConnected ? (
+            <div className="wallet-info" onClick={handleConnect}>
+              Connect
+            </div>
+          ) : (
+            <div className="wallet-info" onClick={handleDisconnect}>
+              {balance.toFixed(4)} INJ | {truncateAddress(walletAddress)}
+            </div>
+          )}
+        </div>
 
-        <div className="right-panel">
-          <div className="tab-header">
-            <button
-              className={`tab ${activeTab === "INJ" ? "active" : ""}`}
-              onClick={() => setActiveTab("INJ")}
-            >
-              INJ
-            </button>
-            <button
-              className={`tab ${activeTab === "wINJ" ? "active" : ""}`}
-              onClick={() => setActiveTab("wINJ")}
-            >
-              wINJ
-            </button>
-          </div>
-          <div className="transfer-form">
-            <label className="form-label">address</label>
-            <input
-              type="text"
-              className="form-input"
-              value={state.address}
-              onChange={(e) => setState({ ...state, address: e.target.value })}
-            />
+        <div className="vault-content">
+          <div className="left-panel">
+            <div className="balance-section">
+              <h2 className="total-title">Total in Vault</h2>
+              <div className="total-amount">
+                {state.totalBalance.toFixed(2)}wINJ
+              </div>
 
-            <label className="form-label">amount</label>
-            <div className="amount-input-container">
               <input
                 type="text"
-                className="form-input amount-input"
-                value={state.amount}
-                onChange={(e) => setState({ ...state, amount: e.target.value })}
+                className="vault-input"
+                placeholder="0.0"
+                value={vaultAmount}
+                onChange={(e) => setVaultAmount(e.target.value)}
+                disabled={buttonsDisabled}
+                style={{
+                  opacity: buttonsDisabled ? 0.5 : 1,
+                  cursor: buttonsDisabled ? "not-allowed" : "text",
+                }}
               />
-              <span className="currency-label">{activeTab}</span>
-            </div>
 
-             <button
-              disabled={isTransferring || !state.address || !state.amount}
-              className="transfer-button"
-              onClick={handleTransfer}
-            >
-              {isTransferring ? "Transferring..." : "Transfer"}
-            </button>
-
-            {txStatus.type && (
-              <div className={`tx-status tx-status-${txStatus.type}`}>
-                <p>{txStatus.message}</p>
-                {txStatus.txHash && txStatus.type === "success" && (
-                  <a
-                    href={`${INJECTIVE_EVM_PARAMS.blockExplorerUrls[0]}/tx/${txStatus.txHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="tx-link"
-                  >
-                    View on Explorer →
-                  </a>
-                )}
+              <div className="button-group">
+                <button
+                  className="action-button"
+                  onClick={handleDeposit}
+                  disabled={buttonsDisabled}
+                  style={{
+                    opacity: buttonsDisabled ? 0.5 : 1,
+                    cursor: buttonsDisabled ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Deposit
+                </button>
+                <button
+                  className="action-button"
+                  onClick={handleWithdraw}
+                  disabled={buttonsDisabled}
+                  style={{
+                    opacity: buttonsDisabled ? 0.5 : 1,
+                    cursor: buttonsDisabled ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Withdraw
+                </button>
               </div>
-            )}
+            </div>
+          </div>
+
+          <div className="right-panel">
+            <div className="tab-header">
+              <button
+                className={`tab ${activeTab === "INJ" ? "active" : ""}`}
+                onClick={() => setActiveTab("INJ")}
+                disabled={buttonsDisabled}
+                style={{
+                  opacity: buttonsDisabled ? 0.5 : 1,
+                  cursor: buttonsDisabled ? "not-allowed" : "pointer",
+                }}
+              >
+                INJ
+              </button>
+              <button
+                className={`tab ${activeTab === "wINJ" ? "active" : ""}`}
+                onClick={() => setActiveTab("wINJ")}
+                disabled={buttonsDisabled}
+                style={{
+                  opacity: buttonsDisabled ? 0.5 : 1,
+                  cursor: buttonsDisabled ? "not-allowed" : "pointer",
+                }}
+              >
+                wINJ
+              </button>
+            </div>
+            <div className="transfer-form">
+              <label className="form-label">address</label>
+              <input
+                type="text"
+                className="form-input"
+                value={state.address}
+                onChange={(e) =>
+                  setState({ ...state, address: e.target.value })
+                }
+                disabled={buttonsDisabled}
+                style={{
+                  opacity: buttonsDisabled ? 0.5 : 1,
+                  cursor: buttonsDisabled ? "not-allowed" : "text",
+                }}
+              />
+
+              <label className="form-label">amount</label>
+              <div className="amount-input-container">
+                <input
+                  type="text"
+                  className="form-input amount-input"
+                  value={state.amount}
+                  onChange={(e) =>
+                    setState({ ...state, amount: e.target.value })
+                  }
+                  disabled={buttonsDisabled}
+                  style={{
+                    opacity: buttonsDisabled ? 0.5 : 1,
+                    cursor: buttonsDisabled ? "not-allowed" : "text",
+                  }}
+                />
+                <span className="currency-label">{activeTab}</span>
+              </div>
+
+              <button
+                disabled={
+                  buttonsDisabled ||
+                  isTransferring ||
+                  !state.address ||
+                  !state.amount
+                }
+                className="transfer-button"
+                onClick={handleTransfer}
+                style={{
+                  opacity:
+                    buttonsDisabled ||
+                    isTransferring ||
+                    !state.address ||
+                    !state.amount
+                      ? 0.5
+                      : 1,
+                  cursor:
+                    buttonsDisabled ||
+                    isTransferring ||
+                    !state.address ||
+                    !state.amount
+                      ? "not-allowed"
+                      : "pointer",
+                }}
+              >
+                {isTransferring ? "Transferring..." : "Transfer"}
+              </button>
+
+              {txStatus.type && (
+                <div className={`tx-status tx-status-${txStatus.type}`}>
+                  <p>{txStatus.message}</p>
+                  {txStatus.txHash && txStatus.type === "success" && (
+                    <a
+                      href={`${INJECTIVE_EVM_PARAMS.blockExplorerUrls[0]}tx/${txStatus.txHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="tx-link"
+                    >
+                      View on Explorer →
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
