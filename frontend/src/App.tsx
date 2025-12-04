@@ -3,6 +3,7 @@ import "./App.css";
 import { BrowserProvider, formatEther, parseEther, Contract, MaxUint256 } from "ethers";
 import WINJ_ABI from "./abis/wINJ.json";
 import VAULT_ABI from "./abis/SavingsVault.json";
+import injectiveLogo from "./assets/logo.png";
 // Contract addresses
 const WINJ_CONTRACT_ADDRESS = "0x0000000088827d2d103ee2d9A6b781773AE03FfB";
 const VAULT_CONTRACT_ADDRESS = "0x26292356C2b29291B46DdEB18C6B8973026933bF";
@@ -478,7 +479,10 @@ function App() {
       )}
       <div className="vault-container">
         <div className="vault-header">
-          <h1 className="vault-title">Vault</h1>
+          <div className="header-left">
+            <img src={injectiveLogo} alt="Injective" className="injective-logo" />
+            <h1 className="vault-title">Vault</h1>
+          </div>
           <div className="header-right">
             {isConnected && (
               <button className="add-token-button" onClick={addWINJToWallet}>
@@ -503,7 +507,7 @@ function App() {
             <div className="balance-section">
               <h2 className="total-title">Total in Vault</h2>
               <div className="total-amount">
-                {vaultBalance.toFixed(4)}wINJ
+                {vaultBalance.toFixed(4)} wINJ
               </div>
 
               <input
@@ -529,6 +533,9 @@ function App() {
                     cursor: buttonsDisabled ? "not-allowed" : "pointer",
                   }}
                 >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '8px' }}>
+                    <path d="M8 3L8 13M8 3L4 7M8 3L12 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
                   Deposit
                 </button>
                 <button
@@ -540,6 +547,9 @@ function App() {
                     cursor: buttonsDisabled ? "not-allowed" : "pointer",
                   }}
                 >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '8px' }}>
+                    <path d="M8 13L8 3M8 13L12 9M8 13L4 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
                   Withdraw
                 </button>
               </div>

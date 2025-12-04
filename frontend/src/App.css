@@ -12,6 +12,17 @@
   margin-bottom: 40px;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.injective-logo {
+  height: 70px;
+  width: auto;
+}
+
 .vault-title {
   font-size: 32px;
   font-weight: 400;
@@ -129,6 +140,9 @@
   cursor: pointer;
   transition: all 0.3s ease;
   font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .action-button:hover {
