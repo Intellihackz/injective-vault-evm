@@ -5,28 +5,15 @@ Welcome! In this  tutorial, we're going to build a fully functional savings vaul
 ## Table of Contents
 
 * [Prerequisites](#prerequisites)
+* [Complete Code Repository](#complete-code-repository)
 * [What We're Building](#what-were-building)
 * [How This Will Work](#how-this-will-work)
+* [Ready to Build?](#ready-to-build)
+* [Project Setup](#project-setup)
 * [Part 1: Smart Contract Development](#part-1-smart-contract-development)
-  * [Setting Up Hardhat](#setting-up-hardhat)
   * [Writing the Vault Contract](#writing-the-vault-contract)
-  * [Understanding wINJ Integration](#understanding-winj-integration)
   * [Testing Our Contracts](#testing-our-contracts)
   * [Deploying to Testnet](#deploying-to-testnet)
-* [Part 2: Frontend Development](#part-2-frontend-development)
-  * [Setting Up React with TypeScript](#setting-up-react-with-typescript)
-  * [Connecting MetaMask Wallet](#connecting-metamask-wallet)
-  * [Implementing Token Approval Flow](#implementing-token-approval-flow)
-  * [Building the Deposit/Withdraw Interface](#building-the-depositwithdraw-interface)
-  * [Adding Transfer Functionality](#adding-transfer-functionality)
-  * [Real-time Balance Updates](#real-time-balance-updates)
-* [Part 3: Integration & Polish](#part-3-integration--polish)
-  * [Contract-Frontend Integration](#contract-frontend-integration)
-  * [Transaction Status Handling](#transaction-status-handling)
-  * [Error Handling & UX](#error-handling--ux)
-  * [Styling & Final Touches](#styling--final-touches)
-* [Conclusion & Next Steps](#conclusion--next-steps)
-* [Ready to Build?](#ready-to-build)
 
 ## Prerequisites
 
@@ -185,7 +172,7 @@ module.exports = {
 
 ## Configuration Breakdown
 
-**Solidity Version**
+### Solidity Version
 
 ```javascript
 solidity: '0.8.28',
@@ -193,7 +180,7 @@ solidity: '0.8.28',
 
 The Solidity compiler version we'll use for our contracts.
 
-**Network Configuration**
+### Network Configuration
 
 ```javascript
 networks: {
@@ -213,7 +200,7 @@ networks: {
 * **gas**: Gas limit for transactions
 * **gasPrice**: Gas price in wei
 
-**Contract Verification**
+### Contract Verification
 
 ```javascript
 etherscan: {
@@ -644,19 +631,19 @@ Create a new file `scripts/deploy.js`:
 async function main() {
     const network = await ethers.provider.getNetwork();
     console.log(`Deploying to network: ${network.name} (chainId: ${network.chainId})`);
-
+    
     // wINJ token address on Injective testnet
     const WINJ_ADDRESS = process.env.WINJ_ADDRESS || '0x0000000088827d2d103ee2d9A6b781773AE03FfB';
     
     console.log(`Using wINJ token address: ${WINJ_ADDRESS}`);
-
+    
     // Get the deployer account
     const [deployer] = await ethers.getSigners();
     console.log(`Deploying contracts with account: ${deployer.address}`);
     
     const balance = await ethers.provider.getBalance(deployer.address);
     console.log(`Account balance: ${ethers.formatEther(balance)} INJ`);
-
+    
     // Deploy SavingsVault
     console.log('\nDeploying SavingsVault...');
     const SavingsVault = await ethers.getContractFactory('SavingsVault');
@@ -667,7 +654,7 @@ async function main() {
     
     await savingsVault.waitForDeployment();
     const address = await savingsVault.getAddress();
-
+    
     console.log('\n✅ SavingsVault deployed successfully!');
     console.log(`Contract address: ${address}`);
     console.log(`wINJ token: ${WINJ_ADDRESS}`);
@@ -690,50 +677,77 @@ main()
 
 Let's break down what this script does:
 
+#### Network Information
+
 ```javascript
-const wINJ_ADDRESS = "0x0000000088827d2d103ee2d9A6b781773AE03FfB";
+const network = await ethers.provider.getNetwork();
+console.log(`Deploying to network: ${network.name} (chainId: ${network.chainId})`);
 ```
 
-We hardcode the wINJ token address that our vault will use.
+This confirms which network we're deploying to - important to avoid accidental mainnet deployments!
+
+#### wINJ Address Configuration
 
 ```javascript
-const SavingsVault = await hre.ethers.getContractFactory("SavingsVault");
-const vault = await SavingsVault.deploy(wINJ_ADDRESS);
-await vault.waitForDeployment();
+const WINJ_ADDRESS = process.env.WINJ_ADDRESS || '0x0000000088827d2d103ee2d9A6b781773AE03FfB';
 ```
 
-This:
+We load the wINJ address from environment variables, with a fallback to the known testnet address.
 
-1. Gets the contract factory (compiled bytecode)
-2. Deploys the contract with the wINJ address
-3. Waits for the deployment transaction to be mined
+#### Deployer Information
 
 ```javascript
-await vault.deploymentTransaction().wait(5);
+const [deployer] = await ethers.getSigners();
+console.log(`Deploying contracts with account: ${deployer.address}`);
+
+const balance = await ethers.provider.getBalance(deployer.address);
+console.log(`Account balance: ${ethers.formatEther(balance)} INJ`);
 ```
 
-We wait for 5 block confirmations to ensure the deployment is finalized before verification.
+This shows which account is deploying and checks if you have enough INJ for gas fees.
+
+#### Contract Deployment
 
 ```javascript
-await hre.run("verify:verify", {
-  address: vaultAddress,
-  constructorArguments: [wINJ_ADDRESS],
+const SavingsVault = await ethers.getContractFactory('SavingsVault');
+const savingsVault = await SavingsVault.deploy(WINJ_ADDRESS, {
+    gasPrice: 160e6,
+    gasLimit: 2e6,
 });
 ```
 
-This verifies the contract on BlockScout explorer, which:
+We specify:
 
-* Makes the source code public
-* Allows users to read the contract on the explorer
-* Enables direct interaction through the explorer UI
+* **gasPrice**: 160 Gwei - appropriate for Injective EVM testnet
+* **gasLimit**: 2 million gas - plenty for our contract deployment
+
+#### Deployment Confirmation
+
+```javascript
+await savingsVault.waitForDeployment();
+const address = await savingsVault.getAddress();
+```
+
+We wait for the transaction to be mined and get the deployed contract address.
+
+#### Adding wINJ Address to .env
+
+Update your `.env` file to include the wINJ address:
+
+```env
+PRIVATE_KEY=your_private_key_here
+INJ_TESTNET_RPC_URL=https://k8s.testnet.json-rpc.injective.network/
+WINJ_ADDRESS=0x0000000088827d2d103ee2d9A6b781773AE03FfB
+```
 
 #### Running the Deployment
 
 Make sure you have:
 
-1. Testnet INJ for gas fees
-2. Your private key in `.env`
-3. The RPC URL in `.env`
+1. ✅ Testnet INJ for gas fees
+2. ✅ Your private key in `.env`
+3. ✅ The RPC URL in `.env`
+4. ✅ The wINJ address in `.env`
 
 Deploy the contract:
 
@@ -744,27 +758,53 @@ npx hardhat run scripts/deploy.js --network inj_testnet
 You should see output like:
 
 ```bash
+Deploying to network: inj_testnet (chainId: 1439)
+Using wINJ token address: 0x0000000088827d2d103ee2d9A6b781773AE03FfB
+Deploying contracts with account: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+Account balance: 5.0 INJ
+
 Deploying SavingsVault...
-SavingsVault deployed to: 0x26292356C2b29291B46DdEB18C6B8973026933bF
-Waiting for block confirmations...
-Verifying contract on BlockScout...
-Contract verified successfully!
+
+✅ SavingsVault deployed successfully!
+Contract address: 0x...
+wINJ token: 0x0000000088827d2d103ee2d9A6b781773AE03FfB
+
+Verify with: npx hardhat verify --network inj_testnet <YOUR_CONTRACT_ADDRESS> 0x0000000088827d2d103ee2d9A6b781773AE03FfB
+
+✅ Deployment script executed successfully.
 ```
 
-**🎉 Save this contract address!** You'll need it for the frontend.
+**🎉 Save your contract address!** You'll need it for the frontend.
 
-#### Verifying the Deployment
+#### Verifying the Contract
+
+After deployment, verify your contract on BlockScout using the command provided in the output:
+
+```bash
+npx hardhat verify --network inj_testnet <YOUR_CONTRACT_ADDRESS> 0x0000000088827d2d103ee2d9A6b781773AE03FfB
+```
+
+Replace `<YOUR_CONTRACT_ADDRESS>` with the address from your deployment output.
+
+You should see:
+
+```bash
+Successfully verified contract SavingsVault on BlockScout.
+https://testnet.blockscout.injective.network/address/<YOUR_CONTRACT_ADDRESS>#code
+```
+
+#### Viewing Your Contract
 
 Visit BlockScout to see your deployed contract:
 
-``` bash
-https://testnet.blockscout.injective.network/address/YOUR_CONTRACT_ADDRESS
+```bash
+https://testnet.blockscout.injective.network/address/<YOUR_CONTRACT_ADDRESS>
 ```
 
 You should see:
 
 * ✅ Contract verified (green checkmark)
-* ✅ Source code visible
-* ✅ Read/Write contract tabs available
+* ✅ Source code visible under "Code" tab
+* ✅ Read/Write contract functions available
 
-Congratulations! Our vault contract is now live on Injective EVM testnet. In the next part, we'll build the frontend to interact with it.
+Congratulations! Your vault contract is now live on Injective EVM testnet. In the next part, we'll build the frontend to interact with it.
