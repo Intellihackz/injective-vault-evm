@@ -2,6 +2,7 @@ import { useState } from "react";
 import "./App.css";
 import { BrowserProvider, formatEther, parseEther, Contract, MaxUint256 } from "ethers";
 import WINJ_ABI from "./abis/wINJ.json";
+import VAULT_ABI from "./abis/SavingsVault.json";
 // Contract addresses
 const WINJ_CONTRACT_ADDRESS = "0x0000000088827d2d103ee2d9A6b781773AE03FfB";
 const VAULT_CONTRACT_ADDRESS = "0x26292356C2b29291B46DdEB18C6B8973026933bF";
@@ -53,13 +54,14 @@ function App() {
     message: "",
   });
   const [state, setState] = useState<VaultState>({
-    totalBalance: 0.03,
+    totalBalance: 0,
     injBalance: 0,
-    winjBalance: 0.03,
+    winjBalance: 0,
     address: "",
     amount: "",
   });
   const [vaultAmount, setVaultAmount] = useState("");
+  const [vaultBalance, setVaultBalance] = useState(0);
 
   // Get wINJ balance
   const getWINJBalance = async (address: string) => {
@@ -76,6 +78,25 @@ function App() {
       console.log("wINJ Balance:", formattedBalance);
     } catch (error) {
       console.error("Error getting wINJ balance:", error);
+    }
+  };
+
+  // Get vault balance
+  const getVaultBalance = async () => {
+    try {
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const vaultContract = new Contract(
+        VAULT_CONTRACT_ADDRESS,
+        VAULT_ABI,
+        signer
+      );
+      const balance = await vaultContract.myBalance();
+      const formattedBalance = Number(formatEther(balance));
+      setVaultBalance(formattedBalance);
+      console.log("Vault Balance:", formattedBalance);
+    } catch (error) {
+      console.error("Error getting vault balance:", error);
     }
   };
 
@@ -129,6 +150,29 @@ function App() {
       console.error("Approval failed:", error);
       setIsApproving(false);
       alert(error instanceof Error ? error.message : "Approval failed");
+    }
+  };
+
+  const addWINJToWallet = async () => {
+    if (typeof window.ethereum === "undefined") {
+      alert("MetaMask not installed!");
+      return;
+    }
+
+    try {
+      await window.ethereum.request({
+        method: "wallet_watchAsset",
+        params: {
+          type: "ERC20",
+          options: {
+            address: WINJ_CONTRACT_ADDRESS,
+            symbol: "wINJ",
+            decimals: 18,
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Failed to add wINJ token:", error);
     }
   };
 
@@ -192,6 +236,9 @@ function App() {
         // Get wINJ balance
         await getWINJBalance(result.address);
 
+        // Get vault balance
+        await getVaultBalance();
+
         // Check if already approved
         const allowance = await checkAllowance(result.address);
 
@@ -215,6 +262,9 @@ function App() {
     setIsConnected(false);
     setWalletAddress("");
     setIsApproved(false);
+    setBalance(0);
+    setWinjBalance(0);
+    setVaultBalance(0);
   };
 
   const truncateAddress = (addr: string) => {
@@ -236,16 +286,36 @@ function App() {
       return;
     }
 
-    if (amount > balance) {
-      alert("Insufficient balance");
+    if (amount > winjBalance) {
+      alert("Insufficient wINJ balance");
       return;
     }
 
-    console.log("Depositing:", amount, "INJ");
-    // TODO: Implement deposit logic
+    try {
+      console.log("Depositing:", amount, "wINJ");
+      
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const vaultContract = new Contract(
+        VAULT_CONTRACT_ADDRESS,
+        VAULT_ABI,
+        signer
+      );
 
-    // Clear input after successful deposit
-    setVaultAmount("");
+      const tx = await vaultContract.deposit(parseEther(vaultAmount));
+      console.log("Deposit transaction sent:", tx.hash);
+
+      // Update balances immediately (optimistically)
+      const address = await signer.getAddress();
+      await getWINJBalance(address);
+      await getVaultBalance();
+
+      // Clear input after successful deposit
+      setVaultAmount("");
+    } catch (error) {
+      console.error("Deposit failed:", error);
+      alert(error instanceof Error ? error.message : "Deposit failed");
+    }
   };
 
   const handleWithdraw = async () => {
@@ -260,16 +330,36 @@ function App() {
       return;
     }
 
-    if (amount > state.winjBalance) {
+    if (amount > vaultBalance) {
       alert("Insufficient wINJ balance in vault");
       return;
     }
 
-    console.log("Withdrawing:", amount, "wINJ");
-    // TODO: Implement withdraw logic
+    try {
+      console.log("Withdrawing:", amount, "wINJ");
+      
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const vaultContract = new Contract(
+        VAULT_CONTRACT_ADDRESS,
+        VAULT_ABI,
+        signer
+      );
 
-    // Clear input after successful withdrawal
-    setVaultAmount("");
+      const tx = await vaultContract.withdraw(parseEther(vaultAmount));
+      console.log("Withdraw transaction sent:", tx.hash);
+
+      // Update balances immediately (optimistically)
+      const address = await signer.getAddress();
+      await getWINJBalance(address);
+      await getVaultBalance();
+
+      // Clear input after successful withdrawal
+      setVaultAmount("");
+    } catch (error) {
+      console.error("Withdraw failed:", error);
+      alert(error instanceof Error ? error.message : "Withdraw failed");
+    }
   };
 
   const handleTransfer = async () => {
@@ -340,7 +430,7 @@ function App() {
         txHash: tx.hash,
       });
 
-      // Update balances
+      // Update balances immediately (optimistically)
       const address = await signer.getAddress();
       if (activeTab === "INJ") {
         const newBalance = await provider.getBalance(address);
@@ -389,16 +479,23 @@ function App() {
       <div className="vault-container">
         <div className="vault-header">
           <h1 className="vault-title">Vault</h1>
-          {!isConnected ? (
-            <div className="wallet-info" onClick={handleConnect}>
-              Connect
-            </div>
-          ) : (
-            <div className="wallet-info" onClick={handleDisconnect}>
-              {balance.toFixed(4)} INJ | {winjBalance.toFixed(4)} wINJ |{" "}
-              {truncateAddress(walletAddress)}
-            </div>
-          )}
+          <div className="header-right">
+            {isConnected && (
+              <button className="add-token-button" onClick={addWINJToWallet}>
+                + Add wINJ
+              </button>
+            )}
+            {!isConnected ? (
+              <div className="wallet-info" onClick={handleConnect}>
+                Connect
+              </div>
+            ) : (
+              <div className="wallet-info" onClick={handleDisconnect}>
+                {balance.toFixed(4)} INJ | {winjBalance.toFixed(4)} wINJ |{" "}
+                {truncateAddress(walletAddress)}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="vault-content">
@@ -406,7 +503,7 @@ function App() {
             <div className="balance-section">
               <h2 className="total-title">Total in Vault</h2>
               <div className="total-amount">
-                {state.totalBalance.toFixed(2)}wINJ
+                {vaultBalance.toFixed(4)}wINJ
               </div>
 
               <input

@@ -18,6 +18,30 @@
   letter-spacing: 1px;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.add-token-button {
+  padding: 8px 16px;
+  background-color: transparent;
+  color: #2e2c2c;
+  border: 1px solid #333;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.add-token-button:hover {
+  border-color: #666;
+  background-color: #f5f5f5;
+}
+
 .vault-id {
   font-size: 18px;
   color: #2e2c2c;
