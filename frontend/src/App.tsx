@@ -1,6 +1,210 @@
 import { useState } from "react";
 import "./App.css";
-import { BrowserProvider, formatEther, parseEther } from "ethers";
+import { BrowserProvider, formatEther, parseEther, Contract } from "ethers";
+
+// Contract addresses
+const WINJ_CONTRACT_ADDRESS = "0x0000000088827d2d103ee2d9A6b781773AE03FfB";
+const VAULT_CONTRACT_ADDRESS = "0x26292356C2b29291B46DdEB18C6B8973026933bF";
+
+// wINJ ABI
+const WINJ_ABI = [
+  {
+    inputs: [
+      { internalType: "string", name: "name_", type: "string" },
+      { internalType: "string", name: "symbol_", type: "string" },
+      { internalType: "uint8", name: "decimals_", type: "uint8" },
+    ],
+    stateMutability: "payable",
+    type: "constructor",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "spender", type: "address" },
+      { internalType: "uint256", name: "allowance", type: "uint256" },
+      { internalType: "uint256", name: "needed", type: "uint256" },
+    ],
+    name: "ERC20InsufficientAllowance",
+    type: "error",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "sender", type: "address" },
+      { internalType: "uint256", name: "balance", type: "uint256" },
+      { internalType: "uint256", name: "needed", type: "uint256" },
+    ],
+    name: "ERC20InsufficientBalance",
+    type: "error",
+  },
+  {
+    inputs: [{ internalType: "address", name: "approver", type: "address" }],
+    name: "ERC20InvalidApprover",
+    type: "error",
+  },
+  {
+    inputs: [{ internalType: "address", name: "receiver", type: "address" }],
+    name: "ERC20InvalidReceiver",
+    type: "error",
+  },
+  {
+    inputs: [{ internalType: "address", name: "sender", type: "address" }],
+    name: "ERC20InvalidSender",
+    type: "error",
+  },
+  {
+    inputs: [{ internalType: "address", name: "spender", type: "address" }],
+    name: "ERC20InvalidSpender",
+    type: "error",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "owner",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "spender",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "value",
+        type: "uint256",
+      },
+    ],
+    name: "Approval",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "dst", type: "address" },
+      { indexed: false, internalType: "uint256", name: "wad", type: "uint256" },
+    ],
+    name: "Deposit",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "from", type: "address" },
+      { indexed: true, internalType: "address", name: "to", type: "address" },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "value",
+        type: "uint256",
+      },
+    ],
+    name: "Transfer",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "src", type: "address" },
+      { indexed: false, internalType: "uint256", name: "wad", type: "uint256" },
+    ],
+    name: "Withdrawal",
+    type: "event",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "owner", type: "address" },
+      { internalType: "address", name: "spender", type: "address" },
+    ],
+    name: "allowance",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "spender", type: "address" },
+      { internalType: "uint256", name: "value", type: "uint256" },
+    ],
+    name: "approve",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "account", type: "address" }],
+    name: "balanceOf",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "decimals",
+    outputs: [{ internalType: "uint8", name: "", type: "uint8" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "deposit",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "name",
+    outputs: [{ internalType: "string", name: "", type: "string" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "symbol",
+    outputs: [{ internalType: "string", name: "", type: "string" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "totalSupply",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "to", type: "address" },
+      { internalType: "uint256", name: "value", type: "uint256" },
+    ],
+    name: "transfer",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "from", type: "address" },
+      { internalType: "address", name: "to", type: "address" },
+      { internalType: "uint256", name: "value", type: "uint256" },
+    ],
+    name: "transferFrom",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "wad", type: "uint256" }],
+    name: "withdraw",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  { stateMutability: "payable", type: "receive" },
+];
 
 interface VaultState {
   totalBalance: number;
@@ -38,6 +242,7 @@ function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState("");
   const [balance, setBalance] = useState(0);
+  const [winjBalance, setWinjBalance] = useState(0);
   const [isTransferring, setIsTransferring] = useState(false);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
@@ -54,6 +259,50 @@ function App() {
     amount: "",
   });
   const [vaultAmount, setVaultAmount] = useState("");
+
+  // Get wINJ balance
+  const getWINJBalance = async (address: string) => {
+    try {
+      const provider = new BrowserProvider(window.ethereum);
+      const winjContract = new Contract(
+        WINJ_CONTRACT_ADDRESS,
+        WINJ_ABI,
+        provider
+      );
+      const balance = await winjContract.balanceOf(address);
+      const formattedBalance = Number(formatEther(balance));
+      setWinjBalance(formattedBalance);
+      console.log("wINJ Balance:", formattedBalance);
+    } catch (error) {
+      console.error("Error getting wINJ balance:", error);
+    }
+  };
+
+  // Check allowance (will be used for checking if vault is approved)
+  const checkAllowance = async (address: string) => {
+    try {
+      const provider = new BrowserProvider(window.ethereum);
+      const winjContract = new Contract(
+        WINJ_CONTRACT_ADDRESS,
+        WINJ_ABI,
+        provider
+      );
+      const allowance = await winjContract.allowance(
+        address,
+        VAULT_CONTRACT_ADDRESS
+      );
+      console.log("Current allowance:", formatEther(allowance));
+
+      // If allowance is greater than 0, consider it approved
+      const isApproved = Number(allowance) > 0;
+      setIsApproved(isApproved);
+
+      return allowance;
+    } catch (error) {
+      console.error("Error checking allowance:", error);
+      return 0;
+    }
+  };
 
   const handleApprove = async () => {
     setIsApproving(true);
@@ -121,8 +370,20 @@ function App() {
       if (result && result.address) {
         setIsConnected(true);
         setWalletAddress(result.address);
-        // Show approval modal after successful connection
-        setShowApprovalModal(true);
+
+        // Get wINJ balance
+        await getWINJBalance(result.address);
+
+        // Check if already approved
+        const allowance = await checkAllowance(result.address);
+
+        // Only show approval modal if not already approved
+        if (Number(allowance) === 0) {
+          setShowApprovalModal(true);
+        } else {
+          console.log("Already approved, skipping approval modal");
+          setIsApproved(true);
+        }
       }
     } catch (error) {
       console.error("Failed to connect wallet:", error);
@@ -164,7 +425,7 @@ function App() {
 
     console.log("Depositing:", amount, "INJ");
     // TODO: Implement deposit logic
-    
+
     // Clear input after successful deposit
     setVaultAmount("");
   };
@@ -188,7 +449,7 @@ function App() {
 
     console.log("Withdrawing:", amount, "wINJ");
     // TODO: Implement withdraw logic
-    
+
     // Clear input after successful withdrawal
     setVaultAmount("");
   };
@@ -299,7 +560,8 @@ function App() {
             </div>
           ) : (
             <div className="wallet-info" onClick={handleDisconnect}>
-              {balance.toFixed(4)} INJ | {truncateAddress(walletAddress)}
+              {balance.toFixed(4)} INJ | {winjBalance.toFixed(4)} wINJ |{" "}
+              {truncateAddress(walletAddress)}
             </div>
           )}
         </div>

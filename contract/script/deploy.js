@@ -1,21 +1,44 @@
 async function main() {
-    const Counter = await ethers.getContractFactory('Counter');
-    const counter = await Counter.deploy({
-        gasPrice: 30e9,
+    const network = await ethers.provider.getNetwork();
+    console.log(`Deploying to network: ${network.name} (chainId: ${network.chainId})`);
+
+    // wINJ token address on Injective testnet
+    // Replace with actual wINJ address if different
+    const WINJ_ADDRESS = process.env.WINJ_ADDRESS || '0x1234567890123456789012345678901234567890';
+    
+    console.log(`Using wINJ token address: ${WINJ_ADDRESS}`);
+
+    // Get the deployer account
+    const [deployer] = await ethers.getSigners();
+    console.log(`Deploying contracts with account: ${deployer.address}`);
+    
+    const balance = await ethers.provider.getBalance(deployer.address);
+    console.log(`Account balance: ${ethers.formatEther(balance)} INJ`);
+
+    // Deploy SavingsVault
+    console.log('\nDeploying SavingsVault...');
+    const SavingsVault = await ethers.getContractFactory('SavingsVault');
+    const savingsVault = await SavingsVault.deploy(WINJ_ADDRESS, {
+        gasPrice: 160e6,
         gasLimit: 2e6,
     });
-    await counter.waitForDeployment();
-    const address = await counter.getAddress();
+    
+    await savingsVault.waitForDeployment();
+    const address = await savingsVault.getAddress();
 
-    console.log('Counter smart contract deployed to:', address);
+    console.log('\n✅ SavingsVault deployed successfully!');
+    console.log(`Contract address: ${address}`);
+    console.log(`wINJ token: ${WINJ_ADDRESS}`);
+    console.log(`\nVerify with: npx hardhat verify --network inj_testnet ${address} ${WINJ_ADDRESS}`);
 }
 
 main()
     .then(() => {
-        console.log('Deployment script executed successfully.');
+        console.log('\n✅ Deployment script executed successfully.');
         process.exit(0);
     })
     .catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
+        console.error('\n❌ Deployment failed:');
+        console.error(error);
+        process.exitCode = 1;
     });
