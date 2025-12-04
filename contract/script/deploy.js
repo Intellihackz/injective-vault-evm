@@ -3,8 +3,7 @@ async function main() {
     console.log(`Deploying to network: ${network.name} (chainId: ${network.chainId})`);
 
     // wINJ token address on Injective testnet
-    // Replace with actual wINJ address if different
-    const WINJ_ADDRESS = process.env.WINJ_ADDRESS || '0x1234567890123456789012345678901234567890';
+    const WINJ_ADDRESS = process.env.WINJ_ADDRESS || '0x0000000088827d2d103ee2d9A6b781773AE03FfB';
     
     console.log(`Using wINJ token address: ${WINJ_ADDRESS}`);
 
