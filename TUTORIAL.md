@@ -1570,7 +1570,7 @@ Before we can interact with our vault contract, we need to understand an importa
 
 #### Why Do We Need to Approve the wINJ Contract?
 
-When a user wants to deposit into the vault, our vault contract calls `wINJ.transferFrom(msg.sender, address(this), amount)` to move tokens from the user's wallet into the vault. 
+When a user wants to deposit into the vault, our vault contract calls `wINJ.transferFrom(msg.sender, address(this), amount)` to move tokens from the user's wallet into the vault.
 
 However, the wINJ token contract won't allow our vault to transfer tokens unless the user has first called `wINJ.approve(vaultAddress, amount)` to give permission.
 
@@ -1739,3 +1739,756 @@ You should see:
 * ✅ Disconnecting resets the approval state
 
 Next, we'll implement the actual wINJ approval logic that interacts with the blockchain!
+
+---
+
+## Working with the wINJ Token Contract
+
+Now let's implement the real blockchain interactions for the wINJ token. We'll learn how to load the contract, approve spending, transfer tokens, and check balances.
+
+### Setting Up Contract ABIs
+
+First, we need the ABI (Application Binary Interface) for the wINJ token contract. Create a new folder `src/abis` and add a file called `wINJ.json`.
+
+Copy the complete wINJ ABI from the repository: `https://github.com/Intellihackz/injective-vault-evm/blob/main/frontend/src/abis/wINJ.json`
+
+The ABI includes all the functions we need:
+
+* **balanceOf**: Get a user's wINJ balance
+* **approve**: Approve a contract to spend tokens
+* **transfer**: Transfer tokens to another address
+* **allowance**: Check how much a contract is approved to spend
+* **deposit**: Wrap INJ into wINJ
+* **withdraw**: Unwrap wINJ back to INJ
+
+### Adding Contract Addresses
+
+At the top of your `App.tsx` file, add the contract addresses as constants:
+
+```typescript
+const WINJ_ADDRESS = "0x0000000088827d2d103ee2d9A6b781773AE03FfB";
+const VAULT_ADDRESS = "YOUR_DEPLOYED_VAULT_ADDRESS"; // Replace with your deployed vault address
+```
+
+Replace `YOUR_DEPLOYED_VAULT_ADDRESS` with the address from when you deployed your SavingsVault contract.
+
+### Importing the ABI and Contract Class
+
+Update your imports to include the Contract class and the wINJ ABI:
+
+```typescript
+import { BrowserProvider, parseEther, formatEther, Contract } from "ethers";
+import wINJABI from "./abis/wINJ.json";
+```
+
+### Loading the wINJ Contract
+
+Create a helper function to load the wINJ contract:
+
+```typescript
+const getWINJContract = async () => {
+  if (typeof window.ethereum === "undefined") {
+    throw new Error("MetaMask not installed");
+  }
+
+  const provider = new BrowserProvider(window.ethereum);
+  const signer = await provider.getSigner();
+  const wINJContract = new Contract(WINJ_ADDRESS, wINJABI, signer);
+
+  return { wINJContract, signer, provider };
+};
+```
+
+This function:
+
+* Checks that MetaMask is installed
+* Creates a provider to connect to the blockchain
+* Gets the signer (your connected wallet) to sign transactions
+* Creates a contract instance with the address, ABI, and signer
+
+### Getting wINJ Balance
+
+Now let's create a function to fetch the user's wINJ balance:
+
+```typescript
+const getWINJBalance = async (address: string) => {
+  try {
+    const { wINJContract } = await getWINJContract();
+    const balance = await wINJContract.balanceOf(address);
+    return Number(formatEther(balance));
+  } catch (error) {
+    console.error("Failed to get wINJ balance:", error);
+    return 0;
+  }
+};
+```
+
+### Checking Current Allowance
+
+Before approving, it's good practice to check if the vault already has an allowance:
+
+```typescript
+const checkAllowance = async (ownerAddress: string) => {
+  try {
+    const { wINJContract } = await getWINJContract();
+    const allowance = await wINJContract.allowance(ownerAddress, VAULT_ADDRESS);
+    return Number(formatEther(allowance));
+  } catch (error) {
+    console.error("Failed to check allowance:", error);
+    return 0;
+  }
+};
+```
+
+This function checks how much the vault is currently approved to spend from the user's wINJ balance.
+
+### Implementing Real wINJ Approval
+
+Now let's replace the mock `handleApprove` function with real blockchain approval:
+
+```typescript
+const handleApprove = async () => {
+  if (!walletAddress) {
+    setTxStatus({ type: "error", message: "Please connect your wallet first" });
+    return;
+  }
+
+  setIsApproving(true);
+  setTxStatus({ type: "pending", message: "Approving wINJ..." });
+
+  try {
+    const { wINJContract } = await getWINJContract();
+    
+    // Approve a large amount (effectively unlimited for practical purposes)
+    const maxAmount = "1000000000000000000000000"; // 1 million wINJ in wei
+    
+    console.log("Requesting approval...");
+    const tx = await wINJContract.approve(VAULT_ADDRESS, maxAmount);
+    
+    setTxStatus({
+      type: "pending",
+      message: "Waiting for approval confirmation...",
+      txHash: tx.hash,
+    });
+
+    await tx.wait();
+    
+    setTxStatus({
+      type: "success",
+      message: "wINJ approval successful!",
+      txHash: tx.hash,
+    });
+
+    setIsApproved(true);
+    
+    // Close modal after a short delay
+    setTimeout(() => {
+      setShowApprovalModal(false);
+      setTxStatus({ type: null, message: "" });
+    }, 2000);
+
+  } catch (error: any) {
+    console.error("Approval failed:", error);
+    setTxStatus({
+      type: "error",
+      message: error.message || "Approval failed",
+    });
+  } finally {
+    setIsApproving(false);
+  }
+};
+```
+
+**Understanding the Approval Amount:**
+We approve a large amount (1 million wINJ) so users don't need to approve every time they deposit. This is a common pattern in DApps to improve user experience.
+
+### Updating Connection to Check Approval Status
+
+Update your `handleConnect` function to check if the user has already approved the vault:
+
+```typescript
+const handleConnect = async () => {
+  try {
+    const result = await connectMetaMask();
+    if (result && result.address) {
+      setIsConnected(true);
+      setWalletAddress(result.address);
+      setBalance(Number(result.balance) / 10 ** 18);
+      
+      // Check if vault is already approved
+      const allowance = await checkAllowance(result.address);
+      if (allowance > 0) {
+        setIsApproved(true);
+      } else {
+        // Show approval modal if not approved
+        setShowApprovalModal(true);
+      }
+
+      // Get wINJ balance
+      const winjBal = await getWINJBalance(result.address);
+      setState(prev => ({ ...prev, winjBalance: winjBal }));
+    }
+  } catch (error) {
+    console.error("Failed to connect wallet:", error);
+    alert(
+      error instanceof Error ? error.message : "Failed to connect wallet"
+    );
+  }
+};
+```
+
+Now the modal only shows if the user hasn't approved the vault before!
+
+### Implementing wINJ Transfers
+
+Update your `handleTransfer` function to support wINJ transfers when the wINJ tab is active:
+
+```typescript
+const handleTransfer = async () => {
+  if (!isConnected) {
+    setTxStatus({ type: "error", message: "Please connect your wallet first" });
+    return;
+  }
+
+  if (!state.address || !state.amount) {
+    setTxStatus({ type: "error", message: "Please enter both address and amount" });
+    return;
+  }
+
+  try {
+    const amount = parseFloat(state.amount);
+    if (isNaN(amount) || amount <= 0) {
+      setTxStatus({ type: "error", message: "Please enter a valid amount" });
+      return;
+    }
+
+    setIsTransferring(true);
+    setTxStatus({ type: "pending", message: "Transaction pending..." });
+
+    const provider = new BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+
+    if (activeTab === "INJ") {
+      // INJ transfer (existing code)
+      if (amount > balance) {
+        setTxStatus({ type: "error", message: "Insufficient INJ balance" });
+        setIsTransferring(false);
+        return;
+      }
+
+      const tx = await signer.sendTransaction({
+        to: state.address,
+        value: parseEther(state.amount),
+      });
+
+      setTxStatus({
+        type: "pending",
+        message: "Waiting for confirmation...",
+        txHash: tx.hash,
+      });
+
+      await tx.wait();
+
+      setTxStatus({
+        type: "success",
+        message: "INJ transfer confirmed!",
+        txHash: tx.hash,
+      });
+
+      const newBalance = await provider.getBalance(await signer.getAddress());
+      setBalance(Number(formatEther(newBalance)));
+
+    } else {
+      // wINJ transfer (new code)
+      if (amount > state.winjBalance) {
+        setTxStatus({ type: "error", message: "Insufficient wINJ balance" });
+        setIsTransferring(false);
+        return;
+      }
+
+      const { wINJContract } = await getWINJContract();
+      const tx = await wINJContract.transfer(state.address, parseEther(state.amount));
+
+      setTxStatus({
+        type: "pending",
+        message: "Waiting for confirmation...",
+        txHash: tx.hash,
+      });
+
+      await tx.wait();
+
+      setTxStatus({
+        type: "success",
+        message: "wINJ transfer confirmed!",
+        txHash: tx.hash,
+      });
+
+      // Update wINJ balance
+      const newWinjBalance = await getWINJBalance(walletAddress);
+      setState(prev => ({ ...prev, winjBalance: newWinjBalance }));
+    }
+
+    setState(prev => ({ ...prev, address: "", amount: "" }));
+    
+  } catch (error: any) {
+    console.error("Transfer failed:", error);
+    setTxStatus({
+      type: "error",
+      message: error.message || "Transaction failed",
+    });
+  } finally {
+    setIsTransferring(false);
+  }
+};
+```
+
+### Displaying wINJ Balance in the UI
+
+Update your UI to show both INJ and wINJ balances in the header. The header already shows the balances when connected:
+
+```typescript
+{!isConnected ? (
+  <div className="wallet-info" onClick={handleConnect}>
+    Connect
+  </div>
+) : (
+  <div className="wallet-info" onClick={handleDisconnect}>
+    {balance.toFixed(4)} INJ | {winjBalance.toFixed(4)} wINJ |{" "}
+    {truncateAddress(walletAddress)}
+  </div>
+)}
+```
+
+This displays:
+
+* **INJ balance** - Your native INJ tokens
+* **wINJ balance** - Your wrapped INJ (ERC20) tokens  
+* **Wallet address** - Truncated for readability
+
+**Note:** The vault balance (how much you've deposited) is different from your wINJ balance (what's in your wallet). We'll display the vault balance in the left panel separately.
+
+### Testing wINJ Functionality
+
+Now test all the wINJ features:
+
+1. **Connect Wallet**
+   * If first time: Approval modal appears
+   * If previously approved: Modal is skipped
+
+2. **Approve wINJ** (if modal shows)
+   * Click "Approve"
+   * Approve in MetaMask
+   * Wait for confirmation
+   * Modal closes automatically
+
+3. **Check Balances**
+   * See both INJ and wINJ balances displayed
+
+4. **Transfer wINJ**
+   * Switch to wINJ tab
+   * Enter recipient address
+   * Enter amount
+   * Click "Transfer"
+   * Approve in MetaMask
+   * Watch status updates
+
+You should see:
+
+* ✅ Automatic approval status check on connect
+* ✅ Real blockchain approval transaction
+* ✅ wINJ balance displayed and updated
+* ✅ wINJ transfers work correctly
+* ✅ Different behavior for INJ vs wINJ tabs
+
+### Adding wINJ to MetaMask
+
+To make it easier for users to track their wINJ balance, let's add a button that adds the wINJ token to their MetaMask wallet with one click.
+
+Create a function to add wINJ to the user's wallet:
+
+```typescript
+const addWINJToWallet = async () => {
+  if (typeof window.ethereum === "undefined") {
+    alert("MetaMask not installed!");
+    return;
+  }
+
+  try {
+    await window.ethereum.request({
+      method: "wallet_watchAsset",
+      params: {
+        type: "ERC20",
+        options: {
+          address: WINJ_ADDRESS,
+          symbol: "wINJ",
+          decimals: 18,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Failed to add wINJ token:", error);
+  }
+};
+```
+
+This function:
+* Uses MetaMask's `wallet_watchAsset` method
+* Specifies the token details (address, symbol, decimals)
+* Opens MetaMask to let the user confirm adding the token
+
+### Adding the Button to the UI
+
+Update your header to include the "Add wINJ" button:
+
+```typescript
+<div className="vault-header">
+  <div className="header-left">
+    <h1 className="vault-title">Vault</h1>
+  </div>
+  <div className="header-right">
+    {isConnected && (
+      <button className="add-token-button" onClick={addWINJToWallet}>
+        + Add wINJ
+      </button>
+    )}
+    {!isConnected ? (
+      <div className="wallet-info" onClick={handleConnect}>
+        Connect
+      </div>
+    ) : (
+      <div className="wallet-info" onClick={handleDisconnect}>
+        {balance.toFixed(4)} INJ | {winjBalance.toFixed(4)} wINJ |{" "}
+        {truncateAddress(walletAddress)}
+      </div>
+    )}
+  </div>
+</div>
+```
+
+The button only shows when the wallet is connected, and clicking it prompts MetaMask to add the wINJ token to the user's wallet for easy tracking.
+
+Next, we'll implement the deposit and withdraw functions to interact with the vault contract!
+
+---
+
+## Interacting with the Vault Contract
+
+Now that we can work with wINJ tokens, let's connect to our deployed SavingsVault contract to enable deposits and withdrawals.
+
+### Getting the Vault Contract ABI
+
+When we compiled our SavingsVault contract with Hardhat, it automatically generated an ABI file. This ABI is located at:
+
+```
+contract/artifacts/contracts/SavingsVault.sol/SavingsVault.json
+```
+
+**To get the ABI:**
+
+1. Navigate to your contract folder: `cd contract`
+2. Open the file: `contract/artifacts/contracts/SavingsVault.sol/SavingsVault.json`
+3. Copy the entire `abi` array from this file
+4. Create a new file in your frontend: `frontend/src/abis/SavingsVault.json`
+5. Paste the ABI array there
+
+Alternatively, you can copy the ABI from the repository: `https://github.com/Intellihackz/injective-vault-evm/blob/main/frontend/src/abis/SavingsVault.json`
+
+The SavingsVault ABI includes these key functions:
+
+* **deposit(uint256 amount)** - Deposit wINJ into the vault
+* **withdraw(uint256 amount)** - Withdraw wINJ from the vault
+* **myBalance()** - Get your deposited balance in the vault
+
+### Adding the Vault Contract Address
+
+Update your contract addresses at the top of `App.tsx`:
+
+```typescript
+const WINJ_ADDRESS = "0x0000000088827d2d103ee2d9A6b781773AE03FfB";
+const VAULT_ADDRESS = "YOUR_DEPLOYED_VAULT_ADDRESS"; // Replace with your deployed vault address
+```
+
+Remember to replace `YOUR_DEPLOYED_VAULT_ADDRESS` with the actual address from when you deployed your SavingsVault contract in Part 1.
+
+### Importing the Vault ABI
+
+Update your imports to include the Vault ABI:
+
+```typescript
+import { BrowserProvider, parseEther, formatEther, Contract } from "ethers";
+import wINJABI from "./abis/wINJ.json";
+import vaultABI from "./abis/SavingsVault.json";
+```
+
+### Adding Vault Balance State
+
+Add a state variable to track the user's vault balance:
+
+```typescript
+const [vaultBalance, setVaultBalance] = useState(0);
+```
+
+### Getting Vault Balance
+
+Create a function to fetch the user's balance in the vault:
+
+```typescript
+const getVaultBalance = async () => {
+  try {
+    const provider = new BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const vaultContract = new Contract(VAULT_ADDRESS, vaultABI, signer);
+    
+    const balance = await vaultContract.myBalance();
+    const formattedBalance = Number(formatEther(balance));
+    
+    setVaultBalance(formattedBalance);
+    console.log("Vault Balance:", formattedBalance);
+    
+    return formattedBalance;
+  } catch (error) {
+    console.error("Error getting vault balance:", error);
+    return 0;
+  }
+};
+```
+
+This function:
+
+* Creates a contract instance connected to your vault
+* Calls `myBalance()` to get the user's deposited amount
+* Formats it from wei to human-readable format
+* Updates the state to display in the UI
+
+### Updating Connection to Load Vault Balance
+
+Update your `handleConnect` function to also load the vault balance:
+
+```typescript
+// Add this after getting wINJ balance
+await getVaultBalance();
+```
+
+Your complete `handleConnect` should now fetch:
+
+1. INJ balance
+2. wINJ balance  
+3. Vault balance
+4. Approval status
+
+### Implementing the Deposit Function
+
+Now let's implement the real deposit functionality:
+
+```typescript
+const handleDeposit = async () => {
+  if (!vaultAmount) {
+    setTxStatus({ type: "error", message: "Please enter an amount" });
+    return;
+  }
+
+  const amount = parseFloat(vaultAmount);
+  if (isNaN(amount) || amount <= 0) {
+    setTxStatus({ type: "error", message: "Please enter a valid amount" });
+    return;
+  }
+
+  if (amount > winjBalance) {
+    setTxStatus({ type: "error", message: "Insufficient wINJ balance" });
+    return;
+  }
+
+  try {
+    setTxStatus({ type: "pending", message: "Depositing to vault..." });
+    
+    const provider = new BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const vaultContract = new Contract(VAULT_ADDRESS, vaultABI, signer);
+
+    console.log("Depositing:", amount, "wINJ");
+    const tx = await vaultContract.deposit(parseEther(vaultAmount));
+    
+    setTxStatus({
+      type: "pending",
+      message: "Waiting for confirmation...",
+      txHash: tx.hash,
+    });
+
+    await tx.wait();
+    
+    setTxStatus({
+      type: "success",
+      message: "Deposit successful!",
+      txHash: tx.hash,
+    });
+
+    // Update balances
+    const address = await signer.getAddress();
+    await getWINJBalance(address);
+    await getVaultBalance();
+
+    // Clear input
+    setVaultAmount("");
+    
+  } catch (error: any) {
+    console.error("Deposit failed:", error);
+    setTxStatus({
+      type: "error",
+      message: error.message || "Deposit failed",
+    });
+  }
+};
+```
+
+### Implementing the Withdraw Function
+
+Similarly, implement the withdraw functionality:
+
+```typescript
+const handleWithdraw = async () => {
+  if (!vaultAmount) {
+    setTxStatus({ type: "error", message: "Please enter an amount" });
+    return;
+  }
+
+  const amount = parseFloat(vaultAmount);
+  if (isNaN(amount) || amount <= 0) {
+    setTxStatus({ type: "error", message: "Please enter a valid amount" });
+    return;
+  }
+
+  if (amount > vaultBalance) {
+    setTxStatus({ type: "error", message: "Insufficient balance in vault" });
+    return;
+  }
+
+  try {
+    setTxStatus({ type: "pending", message: "Withdrawing from vault..." });
+    
+    const provider = new BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const vaultContract = new Contract(VAULT_ADDRESS, vaultABI, signer);
+
+    console.log("Withdrawing:", amount, "wINJ");
+    const tx = await vaultContract.withdraw(parseEther(vaultAmount));
+    
+    setTxStatus({
+      type: "pending",
+      message: "Waiting for confirmation...",
+      txHash: tx.hash,
+    });
+
+    await tx.wait();
+    
+    setTxStatus({
+      type: "success",
+      message: "Withdrawal successful!",
+      txHash: tx.hash,
+    });
+
+    // Update balances
+    const address = await signer.getAddress();
+    await getWINJBalance(address);
+    await getVaultBalance();
+
+    // Clear input
+    setVaultAmount("");
+    
+  } catch (error: any) {
+    console.error("Withdraw failed:", error);
+    setTxStatus({
+      type: "error",
+      message: error.message || "Withdrawal failed",
+    });
+  }
+};
+```
+
+### Adding Vault Amount Input State
+
+Add a state variable for the deposit/withdraw amount input:
+
+```typescript
+const [vaultAmount, setVaultAmount] = useState("");
+```
+
+### Updating the UI for Vault Operations
+
+Update the left panel to show vault balance and amount input:
+
+```typescript
+<div className="left-panel">
+  <div className="balance-section">
+    <h2 className="total-title">Total in Vault</h2>
+    <div className="total-amount">
+      {vaultBalance.toFixed(4)} wINJ
+    </div>
+
+    <input
+      type="text"
+      className="vault-input"
+      placeholder="0.0"
+      value={vaultAmount}
+      onChange={(e) => setVaultAmount(e.target.value)}
+      disabled={!isConnected || !isApproved}
+    />
+
+    <div className="button-group">
+      <button
+        className="action-button"
+        onClick={handleDeposit}
+        disabled={!isConnected || !isApproved}
+      >
+        Deposit
+      </button>
+      <button
+        className="action-button"
+        onClick={handleWithdraw}
+        disabled={!isConnected || !isApproved}
+      >
+        Withdraw
+      </button>
+    </div>
+  </div>
+</div>
+```
+
+The buttons are disabled until:
+
+1. Wallet is connected
+2. wINJ spending is approved
+
+### Testing Vault Functionality
+
+Now test the complete vault flow:
+
+1. **Connect Wallet & Approve**
+   * Connect your wallet
+   * Approve wINJ spending (if needed)
+   * See your vault balance (should be 0 initially)
+
+2. **Deposit wINJ**
+   * Enter an amount (e.g., 0.01)
+   * Click "Deposit"
+   * Approve transaction in MetaMask
+   * Wait for confirmation
+   * See vault balance update
+
+3. **Withdraw wINJ**
+   * Enter an amount to withdraw
+   * Click "Withdraw"
+   * Approve transaction in MetaMask
+   * Wait for confirmation
+   * See vault balance decrease and wINJ balance increase
+
+You should see:
+
+* ✅ Real-time vault balance updates
+* ✅ Deposit transactions work correctly
+* ✅ Withdraw transactions work correctly
+* ✅ Transaction status feedback
+* ✅ Balance updates after each operation
+* ✅ Input field clears after successful operations
+
+🎉 **Congratulations!** You now have a fully functional savings vault DApp on Injective EVM!
+![Final UI](./assets/./final-app.png)
