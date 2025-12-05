@@ -24,6 +24,11 @@ Welcome! In this  tutorial, we're going to build a fully functional savings vaul
   * [Understanding the UI Components](#understanding-the-ui-components)
   * [Adding the CSS](#adding-the-css)
   * [Running the UI](#running-the-ui)
+  * [Connecting to MetaMask](#connecting-to-metamask)
+  * [Implementing INJ Transfers](#implementing-inj-transfers)
+  * [Understanding Token Approvals](#understanding-token-approvals)
+  * [Working with the wINJ Token Contract](#working-with-the-winj-token-contract)
+  * [Interacting with the Vault Contract](#interacting-with-the-vault-contract)
 
 ## Prerequisites
 
@@ -46,9 +51,9 @@ Before we dive in, let's make sure you have everything you need. Don't worry - w
 
 ## Complete Code Repository
 
-📁 **View the complete source code on GitHub** [https://github.com/Intellihackz/injective-vault-evm]
+**View the complete source code on GitHub** [https://github.com/Intellihackz/injective-vault-evm]
 
-### 📖 How to Use This Tutorial
+### How to Use This Tutorial
 
 This tutorial can be used in two ways:
 
@@ -107,7 +112,7 @@ Alright, enough introduction - let's start building something awesome!
 
 In the next section, we'll set up our project structure with both the smart contracts and frontend in one organized workspace. By the time we're done, you'll have a complete, working DApp that you can actually use and show off.
 
-Let's go! 🚀
+Let's go!
 
 ---
 
@@ -243,7 +248,7 @@ PRIVATE_KEY=your_private_key_here
 INJ_TESTNET_RPC_URL=https://k8s.testnet.json-rpc.injective.network/
 ```
 
-**⚠️ Important Security Notes:**
+**Important Security Notes:**
 
 1. **Never commit your `.env` file to git!** The template's `.gitignore` already excludes it
 2. **Use a testnet-only wallet** - Never use your mainnet wallet's private key
@@ -621,11 +626,11 @@ If you don't have testnet tokens yet:
 
 Our test suite confirms that:
 
-* ✅ Users can approve and deposit wINJ tokens
-* ✅ The vault correctly tracks user balances
-* ✅ Events are emitted with correct parameters
-* ✅ Users can withdraw their deposited tokens
-* ✅ Balances update correctly after withdrawals
+* Users can approve and deposit wINJ tokens
+* The vault correctly tracks user balances
+* Events are emitted with correct parameters
+* Users can withdraw their deposited tokens
+* Balances update correctly after withdrawals
 
 These tests give us confidence that our contract works as expected before we deploy it for real users.
 
@@ -754,10 +759,10 @@ WINJ_ADDRESS=0x0000000088827d2d103ee2d9A6b781773AE03FfB
 
 Make sure you have:
 
-1. ✅ Testnet INJ for gas fees
-2. ✅ Your private key in `.env`
-3. ✅ The RPC URL in `.env`
-4. ✅ The wINJ address in `.env`
+1. Testnet INJ for gas fees
+2. Your private key in `.env`
+3. The RPC URL in `.env`
+4. The wINJ address in `.env`
 
 Deploy the contract:
 
@@ -784,7 +789,7 @@ Verify with: npx hardhat verify --network inj_testnet <YOUR_CONTRACT_ADDRESS> 0x
 ✅ Deployment script executed successfully.
 ```
 
-**🎉 Save your contract address!** You'll need it for the frontend.
+**Save your contract address!** You'll need it for the frontend.
 
 #### Verifying the Contract
 
@@ -813,9 +818,9 @@ https://testnet.blockscout.injective.network/address/<YOUR_CONTRACT_ADDRESS>
 
 You should see:
 
-* ✅ Contract verified (green checkmark)
-* ✅ Source code visible under "Code" tab
-* ✅ Read/Write contract functions available
+* Contract verified (green checkmark)
+* Source code visible under "Code" tab
+* Read/Write contract functions available
 
 Congratulations! Your vault contract is now live on Injective EVM testnet. In the next part, we'll build the frontend to interact with it.
 
@@ -1085,11 +1090,11 @@ npm run dev
 
 You should see:
 
-* ✅ A working UI with mock data
-* ✅ Clickable connect/disconnect
-* ✅ Tab switching between INJ and wINJ
-* ✅ Form inputs that update state
-* ✅ Buttons that log to console
+* A working UI with mock data
+* Clickable connect/disconnect
+* Tab switching between INJ and wINJ
+* Form inputs that update state
+* Buttons that log to console
 
 Everything works visually, but nothing is connected to the blockchain yet. In the next section, we'll add the real wallet connection!
 
@@ -1555,13 +1560,13 @@ Now test your transfer functionality:
 
 You should see:
 
-* ✅ Real-time status updates
-* ✅ Transaction hash displayed
-* ✅ Link to view on BlockScout
-* ✅ Balance updates after confirmation
-* ✅ Form clears automatically
+* Real-time status updates
+* Transaction hash displayed
+* Link to view on BlockScout
+* Balance updates after confirmation
+* Form clears automatically
 
-🎉 You now have working INJ transfers with full user feedback!
+You now have working INJ transfers with full user feedback!
 ![Base UI](./assets/./trandfer-inj.png)
 
 ### Understanding Token Approvals
@@ -1733,10 +1738,10 @@ Now test the complete flow:
 
 You should see:
 
-* ✅ Modal appears automatically after connection
-* ✅ Button shows loading state during approval
-* ✅ Modal closes after approval completes
-* ✅ Disconnecting resets the approval state
+* Modal appears automatically after connection
+* Button shows loading state during approval
+* Modal closes after approval completes
+* Disconnecting resets the approval state
 
 Next, we'll implement the actual wINJ approval logic that interacts with the blockchain!
 
@@ -2094,11 +2099,11 @@ Now test all the wINJ features:
 
 You should see:
 
-* ✅ Automatic approval status check on connect
-* ✅ Real blockchain approval transaction
-* ✅ wINJ balance displayed and updated
-* ✅ wINJ transfers work correctly
-* ✅ Different behavior for INJ vs wINJ tabs
+* Automatic approval status check on connect
+* Real blockchain approval transaction
+* wINJ balance displayed and updated
+* wINJ transfers work correctly
+* Different behavior for INJ vs wINJ tabs
 
 ### Adding wINJ to MetaMask
 
@@ -2483,12 +2488,12 @@ Now test the complete vault flow:
 
 You should see:
 
-* ✅ Real-time vault balance updates
-* ✅ Deposit transactions work correctly
-* ✅ Withdraw transactions work correctly
-* ✅ Transaction status feedback
-* ✅ Balance updates after each operation
-* ✅ Input field clears after successful operations
+* Real-time vault balance updates
+* Deposit transactions work correctly
+* Withdraw transactions work correctly
+* Transaction status feedback
+* Balance updates after each operation
+* Input field clears after successful operations
 
-🎉 **Congratulations!** You now have a fully functional savings vault DApp on Injective EVM!
+**Congratulations!** You now have a fully functional savings vault DApp on Injective EVM!
 ![Final UI](./assets/./final-app.png)
