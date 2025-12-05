@@ -14,6 +14,16 @@ Welcome! In this  tutorial, we're going to build a fully functional savings vaul
   * [Writing the Vault Contract](#writing-the-vault-contract)
   * [Testing Our Contracts](#testing-our-contracts)
   * [Deploying to Testnet](#deploying-to-testnet)
+* [Part 2: Frontend Development](#part-2-frontend-development)
+  * [Setting Up React with TypeScript](#setting-up-react-with-typescript)
+  * [Project Structure](#project-structure)
+  * [Building the UI First](#building-the-ui-first)
+  * [Setting Up TypeScript Interfaces](#setting-up-typescript-interfaces)
+  * [Creating the Main Component](#creating-the-main-component)
+  * [Building the UI Structure](#building-the-ui-structure)
+  * [Understanding the UI Components](#understanding-the-ui-components)
+  * [Adding the CSS](#adding-the-css)
+  * [Running the UI](#running-the-ui)
 
 ## Prerequisites
 
@@ -808,3 +818,924 @@ You should see:
 * ✅ Read/Write contract functions available
 
 Congratulations! Your vault contract is now live on Injective EVM testnet. In the next part, we'll build the frontend to interact with it.
+
+---
+
+## Part 2: Frontend Development
+
+Now that our smart contract is deployed and verified, let's build a beautiful React frontend that allows users to interact with our vault through their MetaMask wallet.
+
+### Setting Up React with TypeScript
+
+Navigate back to the root of your project (the `injective-vault` folder) and create the frontend:
+
+```bash
+cd ..  # Go back to injective-vault folder
+npm create vite@latest frontend
+cd frontend
+npm install ethers
+```
+
+This creates a new React app with TypeScript support and installs ethers.js for blockchain interactions.
+
+Your project structure should now look like:
+
+```
+injective-vault/
+├── contracts/          # Smart contracts (done!)
+└── frontend/           # React app (we're here)
+```
+
+### Project Structure
+
+Let's organize our frontend properly. Here's the structure we'll create:
+
+```
+frontend/
+├── src/
+│   ├── App.tsx         # Main app component
+│   ├── App.css         # Styling
+│   └── abis/           # Contract ABIs
+│       └── SavingsVault.json
+├── public/
+└── package.json
+```
+
+### Building the UI First
+
+We'll start by building the complete user interface with mock data and state management, then add blockchain functionality later.
+
+### Setting Up TypeScript Interfaces
+
+Open `src/App.tsx` and let's create our state interface first:
+
+```typescript
+import { useState } from "react";
+import "./App.css";
+
+interface VaultState {
+  totalBalance: number;
+  injBalance: number;
+  winjBalance: number;
+  address: string;
+  amount: string;
+}
+```
+
+This interface defines all the state we'll need to track:
+
+* **totalBalance**: Total wINJ in the vault
+* **injBalance**: User's INJ balance
+* **winjBalance**: User's wINJ balance
+* **address**: Recipient address for transfers
+* **amount**: Amount to transfer
+
+### Creating the Main Component
+
+Now let's build the component with all our state and handlers:
+
+```typescript
+function App() {
+  const [isConnected, setIsConnected] = useState(false);
+  const [walletAddress, setWalletAddress] = useState("");
+  const [state, setState] = useState<VaultState>({
+    totalBalance: 0.03,
+    injBalance: 0,
+    winjBalance: 0.03,
+    address: "",
+    amount: "",
+  });
+
+  const handleConnect = () => {
+    // Simulate wallet connection (we'll implement real connection later)
+    setIsConnected(true);
+    setWalletAddress("inj1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0");
+  };
+
+  const handleDisconnect = () => {
+    setIsConnected(false);
+    setWalletAddress("");
+  };
+
+  const truncateAddress = (addr: string) => {
+    if (!addr) return "";
+    return `${addr.slice(0, 6)}...${addr.slice(-5)}`;
+  };
+
+  const [activeTab, setActiveTab] = useState<"INJ" | "wINJ">("INJ");
+
+  const handleDeposit = () => {
+    console.log("Deposit clicked");
+  };
+
+  const handleWithdraw = () => {
+    console.log("Withdraw clicked");
+  };
+
+  const handleTransfer = () => {
+    console.log("Transfer:", { address: state.address, amount: state.amount });
+  };
+```
+
+Right now these are just placeholder functions that log to the console. We'll implement the real blockchain interactions later.
+
+### Building the UI Structure
+
+Now let's create the complete UI:
+
+```typescript
+  return (
+    <div className="vault-container">
+      <div className="vault-header">
+        <h1 className="vault-title">Vault</h1>
+        {!isConnected ? (
+          <div className="wallet-info" onClick={handleConnect}>
+            Connect
+          </div>
+        ) : (
+          <div className="wallet-info" onClick={handleDisconnect}>
+            {truncateAddress(walletAddress)}
+          </div>
+        )}
+      </div>
+
+      <div className="vault-content">
+        <div className="left-panel">
+          <div className="balance-section">
+            <h2 className="total-title">Total in Vault</h2>
+            <div className="total-amount">
+              {state.totalBalance.toFixed(2)}wINJ
+            </div>
+
+            <div className="button-group">
+              <button className="action-button" onClick={handleDeposit}>
+                Deposit
+              </button>
+              <button className="action-button" onClick={handleWithdraw}>
+                Withdraw
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="right-panel">
+          <div className="tab-header">
+            <button
+              className={`tab ${activeTab === "INJ" ? "active" : ""}`}
+              onClick={() => setActiveTab("INJ")}
+            >
+              INJ
+            </button>
+            <button
+              className={`tab ${activeTab === "wINJ" ? "active" : ""}`}
+              onClick={() => setActiveTab("wINJ")}
+            >
+              wINJ
+            </button>
+          </div>
+          
+          <div className="transfer-form">
+            <label className="form-label">address</label>
+            <input
+              type="text"
+              className="form-input"
+              value={state.address}
+              onChange={(e) => setState({ ...state, address: e.target.value })}
+            />
+
+            <label className="form-label">amount</label>
+            <div className="amount-input-container">
+              <input
+                type="text"
+                className="form-input amount-input"
+                value={state.amount}
+                onChange={(e) => setState({ ...state, amount: e.target.value })}
+              />
+              <span className="currency-label">{activeTab}</span>
+            </div>
+
+            <button className="transfer-button" onClick={handleTransfer}>
+              Transfer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default App;
+```
+
+### Understanding the UI Components
+
+Let's break down what we've built:
+
+**Header Section**
+
+* Displays "Vault" title
+* Shows "Connect" button when wallet is not connected
+* Shows truncated wallet address when connected (clicking disconnects)
+
+**Left Panel - Vault Operations**
+
+* Displays total balance in the vault
+* Has Deposit and Withdraw buttons
+* Will add input field for amount later
+
+**Right Panel - Transfer Operations**
+
+* Tab switcher between INJ and wINJ
+* Input field for recipient address
+* Input field for transfer amount
+* Transfer button
+* The currency label updates based on active tab
+
+**State Management**
+
+* All form inputs are controlled components
+* State updates trigger re-renders
+* Mock data shows how the UI will look with real data
+
+## Adding the CSS
+
+Our app needs styling to look good. Rather than typing out hundreds of lines of CSS, you can copy the complete stylesheet from the repository.
+
+**Copy the CSS from the repository:**
+
+Visit: `https://github.com/Intellihackz/injective-vault-evm/blob/main/frontend/src/App.css`
+
+Copy the entire contents and paste it into your `src/App.css` file.
+
+The CSS includes:
+
+* Responsive layout with grid system
+* Clean, minimalist design with dark borders
+* Hover effects and transitions
+* Mobile-responsive breakpoints
+* Styled form inputs and buttons
+
+### Running the UI
+
+Start the development server:
+
+```bash
+npm run dev
+```
+
+You should see:
+
+* ✅ A working UI with mock data
+* ✅ Clickable connect/disconnect
+* ✅ Tab switching between INJ and wINJ
+* ✅ Form inputs that update state
+* ✅ Buttons that log to console
+
+Everything works visually, but nothing is connected to the blockchain yet. In the next section, we'll add the real wallet connection!
+
+**your app should look like this**
+![Base UI](./assets/./base-ui.png)
+
+Now let's replace our mock wallet connection with real MetaMask integration.
+
+First, install ethers.js
+
+```bash
+npm install ethers
+```
+
+Now update the imports in `App.tsx`:
+
+```typescript
+import { useState } from "react";
+import "./App.css";
+import { BrowserProvider } from "ethers";
+```
+
+Next, let's add the network configuration for Injective EVM:
+
+```typescript
+const INJECTIVE_EVM_PARAMS = {
+  chainId: "0x59f", // 1439 in hexadecimal
+  chainName: "Injective EVM",
+  rpcUrls: ["https://k8s.testnet.json-rpc.injective.network/"],
+  nativeCurrency: {
+    name: "Injective",
+    symbol: "INJ",
+    decimals: 18,
+  },
+  blockExplorerUrls: ["https://testnet.blockscout.injective.network/"],
+};
+```
+
+This configuration tells MetaMask how to connect to Injective EVM testnet.
+
+### Implementing the Wallet Connection
+
+Now let's write the function that connects to MetaMask and switches to Injective EVM:
+
+```typescript
+const connectMetaMask = async () => {
+  if (typeof window.ethereum === "undefined") {
+    alert("MetaMask not installed!");
+    return;
+  }
+
+  const provider = new BrowserProvider(window.ethereum);
+
+  try {
+    // Request account access
+    const accounts = await provider.send("eth_requestAccounts", []);
+    console.log("Connected accounts:", accounts);
+
+    // Check current chain ID
+    const currentChainId = await window.ethereum.request({
+      method: "eth_chainId",
+    });
+
+    // Only switch/add network if not already on Injective EVM
+    if (currentChainId !== INJECTIVE_EVM_PARAMS.chainId) {
+      try {
+        // Try to switch to the network first
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: INJECTIVE_EVM_PARAMS.chainId }],
+        });
+      } catch (switchError: any) {
+        // If network doesn't exist (error code 4902), add it
+        if (switchError.code === 4902) {
+          await window.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [INJECTIVE_EVM_PARAMS],
+          });
+        } else {
+          throw switchError;
+        }
+      }
+    }
+
+    const signer = await provider.getSigner();
+    const address = await signer.getAddress();
+    const balance = await provider.getBalance(address);
+    const actualBalance = Number(balance) / 10 ** 18;
+
+    console.log("Balance:", balance);
+    console.log("Actual balance:", actualBalance);
+    console.log("Connected address:", address);
+
+    return { provider, signer, address };
+  } catch (err) {
+    console.error("MetaMask connection failed:", err);
+  }
+};
+```
+
+### Understanding the Connection Flow
+
+Let's break down what this function does:
+
+**1. Check MetaMask Installation**
+
+```typescript
+if (typeof window.ethereum === "undefined") {
+  alert("MetaMask not installed!");
+  return;
+}
+```
+
+We first verify that MetaMask is installed by checking for `window.ethereum`.
+
+**2. Create Provider**
+
+```typescript
+const provider = new BrowserProvider(window.ethereum);
+```
+
+The provider is our connection to the blockchain through MetaMask.
+
+**3. Request Account Access**
+
+```typescript
+const accounts = await provider.send("eth_requestAccounts", []);
+```
+
+This triggers the MetaMask popup asking the user to connect their wallet.
+
+**4. Check Current Network**
+
+```typescript
+const currentChainId = await window.ethereum.request({
+  method: "eth_chainId",
+});
+```
+
+We check which network the user is currently on.
+
+**5. Switch or Add Network**
+
+```typescript
+if (currentChainId !== INJECTIVE_EVM_PARAMS.chainId) {
+  try {
+    await window.ethereum.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: INJECTIVE_EVM_PARAMS.chainId }],
+    });
+  } catch (switchError: any) {
+    if (switchError.code === 4902) {
+      await window.ethereum.request({
+        method: "wallet_addEthereumChain",
+        params: [INJECTIVE_EVM_PARAMS],
+      });
+    }
+  }
+}
+```
+
+This is the smart part:
+
+* First, try to switch to Injective EVM if the network exists
+* If the network doesn't exist (error 4902), add it to MetaMask
+* This prevents the annoying "add network" popup every time
+
+**6. Get Account Info**
+
+```typescript
+const signer = await provider.getSigner();
+const address = await signer.getAddress();
+const balance = await provider.getBalance(address);
+const actualBalance = Number(balance) / 10 ** 18;
+```
+
+We get the signer (for signing transactions), wallet address, and INJ balance.
+
+### Updating the Connection Handlers
+
+Now replace the mock `handleConnect` function with the real implementation:
+
+```typescript
+const [balance, setBalance] = useState(0);
+
+const handleConnect = async () => {
+  try {
+    const result = await connectMetaMask();
+    if (result && result.address) {
+      setIsConnected(true);
+      setWalletAddress(result.address);
+      setBalance(Number(result.balance) / 10 ** 18);
+    }
+  } catch (error) {
+    console.error("Failed to connect wallet:", error);
+    alert(
+      error instanceof Error ? error.message : "Failed to connect wallet"
+    );
+  }
+};
+```
+
+### Adding TypeScript Declaration
+
+MetaMask adds `window.ethereum`, but TypeScript doesn't know about it. Add this declaration at the top of your file (after imports):
+
+```typescript
+declare global {
+  interface Window {
+    ethereum?: any;
+  }
+}
+```
+
+### Updating the Header to Show Balance
+
+Update the wallet info display to show the balance:
+
+```typescript
+{!isConnected ? (
+  <div className="wallet-info" onClick={handleConnect}>
+    Connect
+  </div>
+) : (
+  <div className="wallet-info" onClick={handleDisconnect}>
+    {balance.toFixed(4)} INJ | {truncateAddress(walletAddress)}
+  </div>
+)}
+```
+
+### Testing the Connection
+
+Save your file and test it:
+
+1. Click "Connect" in your app
+2. MetaMask should pop up asking to connect
+3. Approve the connection
+4. If you're not on Injective EVM, MetaMask will ask to switch/add the network
+5. Once connected, you should see your balance and address in the header
+
+You now have a real wallet connection! Next, we'll add the contract interactions.
+![Base UI](./assets/./connect.png)
+
+### Implementing INJ Transfers
+
+Before we connect to our vault contract, let's implement basic INJ transfers. This will help us understand how transactions work and give users feedback on transaction status.
+
+First, we need to import more functions from ethers:
+
+```typescript
+import { BrowserProvider, parseEther, formatEther } from "ethers";
+```
+
+* **parseEther**: Converts human-readable amounts (like "1.0") to wei
+* **formatEther**: Converts wei back to human-readable amounts
+
+### Adding Transaction Status Interface
+
+Create an interface to track transaction status:
+
+```typescript
+interface TransactionStatus {
+  type: "success" | "error" | "pending" | null;
+  message: string;
+  txHash?: string;
+}
+```
+
+This lets us show different states:
+
+* **pending**: Transaction submitted, waiting for confirmation
+* **success**: Transaction confirmed
+* **error**: Transaction failed
+* **null**: No transaction status to display
+
+### Adding State Variables
+
+Add these state variables to track transfers:
+
+```typescript
+const [balance, setBalance] = useState(0);
+const [isTransferring, setIsTransferring] = useState(false);
+const [txStatus, setTxStatus] = useState<TransactionStatus>({
+  type: null,
+  message: "",
+});
+```
+
+### Implementing the Transfer Function
+
+Now replace the mock `handleTransfer` with the real implementation:
+
+```typescript
+const handleTransfer = async () => {
+  if (!isConnected) {
+    setTxStatus({ type: "error", message: "Please connect your wallet first" });
+    return;
+  }
+
+  if (!state.address || !state.amount) {
+    setTxStatus({ type: "error", message: "Please enter both address and amount" });
+    return;
+  }
+
+  try {
+    const amount = parseFloat(state.amount);
+    if (isNaN(amount) || amount <= 0) {
+      setTxStatus({ type: "error", message: "Please enter a valid amount" });
+      return;
+    }
+
+    if (amount > balance) {
+      setTxStatus({ type: "error", message: "Insufficient balance" });
+      return;
+    }
+
+    setIsTransferring(true);
+    setTxStatus({ type: "pending", message: "Transaction pending..." });
+
+    const provider = new BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+
+    console.log("Sending transaction...");
+    const tx = await signer.sendTransaction({
+      to: state.address,
+      value: parseEther(state.amount),
+    });
+
+    console.log("Transaction sent:", tx.hash);
+    setTxStatus({
+      type: "pending",
+      message: "Waiting for confirmation...",
+      txHash: tx.hash,
+    });
+
+    const receipt = await tx.wait();
+    console.log("Transaction confirmed:", receipt);
+
+    setTxStatus({
+      type: "success",
+      message: "Transaction confirmed!",
+      txHash: tx.hash,
+    });
+
+    const newBalance = await provider.getBalance(await signer.getAddress());
+    setBalance(Number(formatEther(newBalance)));
+
+    setState({ ...state, address: "", amount: "" });
+  } catch (error: any) {
+    console.error("Transfer failed:", error);
+    setTxStatus({
+      type: "error",
+      message: error.message || "Transaction failed",
+    });
+  } finally {
+    setIsTransferring(false);
+  }
+};
+```
+
+### Understanding the Transfer Flow
+
+**1. Validation with User Feedback**
+
+```typescript
+if (!isConnected) {
+  setTxStatus({ type: "error", message: "Please connect your wallet first" });
+  return;
+}
+```
+
+Instead of alerts, we now update the transaction status so users see errors inline.
+
+**2. Transaction Submission**
+
+```typescript
+setIsTransferring(true);
+setTxStatus({ type: "pending", message: "Transaction pending..." });
+
+const tx = await signer.sendTransaction({
+  to: state.address,
+  value: parseEther(state.amount),
+});
+```
+
+We show "Transaction pending..." immediately when the user clicks transfer.
+
+**3. Waiting for Confirmation**
+
+```typescript
+setTxStatus({
+  type: "pending",
+  message: "Waiting for confirmation...",
+  txHash: tx.hash,
+});
+
+const receipt = await tx.wait();
+```
+
+Once submitted, we update to "Waiting for confirmation..." and include the transaction hash.
+
+**4. Success State**
+
+```typescript
+setTxStatus({
+  type: "success",
+  message: "Transaction confirmed!",
+  txHash: tx.hash,
+});
+```
+
+When confirmed, we show success with a link to view on the explorer.
+
+### Updating the Transfer UI
+
+Replace the transfer button and add the status display:
+
+```typescript
+<button
+  disabled={isTransferring || !state.address || !state.amount}
+  className="transfer-button"
+  onClick={handleTransfer}
+>
+  {isTransferring ? "Transferring..." : "Transfer"}
+</button>
+
+{txStatus.type && (
+  <div className={`tx-status tx-status-${txStatus.type}`}>
+    <p>{txStatus.message}</p>
+    {txStatus.txHash && txStatus.type === "success" && (
+      
+        href={`${INJECTIVE_EVM_PARAMS.blockExplorerUrls[0]}tx/${txStatus.txHash}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="tx-link"
+      >
+        View on Explorer →
+      </a>
+    )}
+  </div>
+)}
+```
+
+The status display shows:
+
+* Error messages in red
+* Pending messages in yellow
+* Success messages in green with explorer link
+
+### Testing INJ Transfers
+
+Now test your transfer functionality:
+
+1. **Connect your wallet**
+2. **Enter a recipient address** (you can use another address you own)
+3. **Enter an amount** (like 0.01)
+4. **Click "Transfer"**
+5. **Approve in MetaMask**
+6. **Watch the status updates**:
+   * "Transaction pending..."
+   * "Waiting for confirmation..." (with tx hash)
+   * "Transaction confirmed!" (with explorer link)
+
+You should see:
+
+* ✅ Real-time status updates
+* ✅ Transaction hash displayed
+* ✅ Link to view on BlockScout
+* ✅ Balance updates after confirmation
+* ✅ Form clears automatically
+
+🎉 You now have working INJ transfers with full user feedback!
+![Base UI](./assets/./trandfer-inj.png)
+
+### Understanding Token Approvals
+
+Before we can interact with our vault contract, we need to understand an important concept: **wINJ token approvals**.
+
+#### Why Do We Need to Approve the wINJ Contract?
+
+When a user wants to deposit into the vault, our vault contract calls `wINJ.transferFrom(msg.sender, address(this), amount)` to move tokens from the user's wallet into the vault. 
+
+However, the wINJ token contract won't allow our vault to transfer tokens unless the user has first called `wINJ.approve(vaultAddress, amount)` to give permission.
+
+Think of it like this: You own wINJ tokens, and you're telling the wINJ contract "I give permission for the vault contract to transfer up to X amount of my wINJ tokens." Without this approval step, the wINJ contract will reject any attempt by the vault to move your tokens.
+
+#### The Two-Step Process
+
+When depositing to the vault:
+
+1. **Approval**: User approves the vault contract to spend their wINJ
+2. **Deposit**: Vault contract uses that approval to transfer tokens
+
+Without step 1, step 2 would fail with "insufficient allowance" error.
+
+#### Why Show an Approval Modal?
+
+We show an approval modal when users first connect because:
+
+* It's a one-time setup step users need to complete
+* It explains what's happening (many users are confused by approval transactions)
+* It blocks the UI until approval is complete (users can't deposit without approval)
+* It provides a clear, focused flow for this important step
+
+### Adding the Approval Modal State
+
+Add new state variables for the approval flow:
+
+```typescript
+const [showApprovalModal, setShowApprovalModal] = useState(false);
+const [isApproving, setIsApproving] = useState(false);
+const [isApproved, setIsApproved] = useState(false);
+```
+
+* **showApprovalModal**: Controls whether the modal is visible
+* **isApproving**: Tracks if approval transaction is in progress
+* **isApproved**: Tracks if user has completed approval
+
+### Creating the Approval Modal UI
+
+Add this modal to your JSX, right before the vault container:
+
+```typescript
+return (
+  <>
+    {showApprovalModal && (
+      <div className="modal-overlay">
+        <div className="modal-content">
+          <h2 className="modal-title">Approve wINJ Spending</h2>
+          <p className="modal-description">
+            To use this vault, you need to approve spending of wINJ tokens.
+            This is required to continue.
+          </p>
+          <div className="modal-buttons">
+            <button
+              className="modal-button modal-button-primary"
+              onClick={handleApprove}
+              disabled={isApproving}
+            >
+              {isApproving ? "Approving..." : "Approve"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    <div className="vault-container">
+      {/* ... rest of your UI ... */}
+    </div>
+  </>
+);
+```
+
+The modal:
+
+* Blocks the entire screen (user must approve to continue)
+* Explains why approval is needed
+* Shows loading state during approval
+* Cannot be dismissed (no close button)
+
+### Understanding the Modal Design
+
+**Why can't users skip this?**
+Without approval, the vault contract cannot move their tokens. Any deposit attempt would fail. By requiring approval upfront, we prevent confusing error messages later.
+
+**Why approve before they even try to deposit?**
+This creates a smoother user experience:
+
+1. Connect wallet → Approve tokens → Use vault freely
+2. Rather than: Connect → Try deposit → See error → Approve → Try deposit again
+
+**Why block the entire UI?**
+This makes it crystal clear that approval is a prerequisite. Users won't waste time trying to use features that won't work without approval.
+
+### The Approval Flow in Action
+
+Here's what happens when a user connects:
+
+1. **User clicks "Connect"**
+2. **Wallet connects successfully**
+3. **App checks if vault is already approved**
+4. **If not approved → Show modal**
+5. **User clicks "Approve"**
+6. **MetaMask opens for approval transaction**
+7. **User approves in MetaMask**
+8. **Transaction confirms**
+9. **Modal closes, UI becomes fully functional**
+
+If the user has approved before (the approval persists on-chain), the modal is skipped entirely and they can use the vault immediately.
+
+### Implementing the Approval Function
+
+Now let's create a mock approval function. We'll implement the real blockchain approval logic later, but for now let's make the modal functional:
+
+```typescript
+const handleApprove = async () => {
+  setIsApproving(true);
+  // TODO: Implement wINJ approval logic
+  setTimeout(() => {
+    setIsApproving(false);
+    setShowApprovalModal(false);
+    setIsApproved(true);
+  }, 2000);
+};
+```
+
+This mock function:
+
+* Sets the approving state to show "Approving..." on the button
+* Simulates a 2-second approval transaction
+* Closes the modal and marks approval as complete
+
+### Updating the Connection Handler
+
+Add this line to your `handleConnect` function after setting the wallet connection state:
+
+```typescript
+// Show approval modal after successful connection
+setShowApprovalModal(true);
+```
+
+### Updating the Disconnect Handler
+
+Add this line to your `handleDisconnect` function to reset the approval state:
+
+```typescript
+setIsApproved(false);
+```
+
+This ensures that when users disconnect and reconnect, they'll see the approval modal again.
+
+### Testing the Approval Flow
+
+Now test the complete flow:
+
+1. **Click "Connect"** - MetaMask should open
+2. **Approve the connection** - Your wallet connects
+3. **Approval modal appears** - Blocking the entire UI
+4. **Click "Approve"** - Button shows "Approving..."
+5. **After 2 seconds** - Modal closes and you can use the app
+
+You should see:
+
+* ✅ Modal appears automatically after connection
+* ✅ Button shows loading state during approval
+* ✅ Modal closes after approval completes
+* ✅ Disconnecting resets the approval state
+
+Next, we'll implement the actual wINJ approval logic that interacts with the blockchain!

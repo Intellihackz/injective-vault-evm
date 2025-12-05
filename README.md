@@ -2,7 +2,7 @@
 
 A decentralized savings vault application built on the Injective EVM testnet, allowing users to securely deposit and withdraw wrapped INJ (wINJ) tokens while maintaining full control of their assets.
 
-![Injective Vault Architecture](./assets/./image.png)
+![Injective Vault Architecture](./assets/./final-ui.png)
 
 ## 📋 Table of Contents
 
