@@ -116,8 +116,3 @@ Now that your project is set up, you're ready to start building:
    * Write the Vault contract
    * Test the contract
    * Deploy to testnet
-
-2. **[Skip to Part 2: Frontend Development →](TUTORIAL-frontend.md)**
-   * Build the React UI
-   * Connect to MetaMask
-   * Interact with contracts
