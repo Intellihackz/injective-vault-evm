@@ -107,7 +107,7 @@ cd injective-vault
 Now let's set up the contract folder using Injective's Hardhat template:
 
 ```bash
-git clone https://github.com/InjectiveLabs/injective-hardhat-template.git contract
+git clone https://github.com/injective-dev/hardhat-inj contract
 cd contract
 npm install --force
 ```
