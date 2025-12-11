@@ -185,31 +185,6 @@ The application will be available at `http://localhost:5173`
 3. Click "Transfer"
 4. Confirm the transaction
 
-## 📝 Smart Contract
-
-### SavingsVault.sol
-
-```solidity
-contract SavingsVault {
-    IERC20 public immutable wINJ;
-    mapping(address => uint256) private balances;
-
-    // Deposit wINJ tokens
-    function deposit(uint256 amount) external;
-    
-    // Withdraw wINJ tokens
-    function withdraw(uint256 amount) external;
-    
-    // Check your balance
-    function myBalance() external view returns (uint256);
-}
-```
-
-### Contract Addresses (Testnet)
-
-- **Vault Contract**: `0x26292356C2b29291B46DdEB18C6B8973026933bF`
-- **wINJ Token**: `0x0000000088827d2d103ee2d9A6b781773AE03FfB`
-
 ## 📂 Project Structure
 
 ```text
