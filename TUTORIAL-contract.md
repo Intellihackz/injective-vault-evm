@@ -1,162 +1,23 @@
 # Part 1: Smart Contract Development
 
-Now that we have our project folder ready, let's set up Hardhat and write our Vault contract! This contract will allow users to safely deposit and withdraw wINJ tokens.
+Welcome to the smart contract development section! Your environment is already set up from the main tutorial, so we can jump straight into writing code.
 
 ## Table of Contents
 
-* [Setting Up Hardhat](#setting-up-hardhat)
 * [Writing the Vault Contract](#writing-the-vault-contract)
 * [Testing Our Contracts](#testing-our-contracts)
 * [Deploying to Testnet](#deploying-to-testnet)
-
-## Setting Up Hardhat
-
-Let's set up the contract folder using Injective's Hardhat template:
-
-```bash
-git clone https://github.com/InjectiveLabs/injective-hardhat-template.git contract
-cd contract
-npm install --force
-```
-
-This gives us a pre-configured Hardhat setup optimized for Injective EVM, including:
-
-* Hardhat configuration for Injective networks
-* Sample contract structure
-* Testing setup
-* Deployment scripts
-
-### Understanding the Hardhat Configuration
-
-The cloned template already comes with a configured `hardhat.config.js` file. Let's understand what each part does:
-
-```javascript
-require('@nomicfoundation/hardhat-toolbox');
-require('dotenv').config();
-
-/** @type import('hardhat/config').HardhatUserConfig */
-module.exports = {
-  solidity: '0.8.28',
-  networks: {
-    inj_testnet: {
-      url: process.env.INJ_TESTNET_RPC_URL || 'https://k8s.testnet.json-rpc.injective.network/',
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      chainId: 1439,
-      gas: 10000000,
-      gasPrice: 50000000000,
-    },
-  },
-  etherscan: {
-    apiKey: {
-      inj_testnet: 'nil',
-    },
-    customChains: [
-      {
-        network: 'inj_testnet',
-        chainId: 1439,
-        urls: {
-          apiURL: 'https://testnet.blockscout-api.injective.network/api',
-          browserURL: 'https://testnet.blockscout.injective.network/',
-        },
-      },
-    ],
-  },
-  sourcify: {
-    enabled: false,
-  },
-};
-```
-
-### Configuration Breakdown
-
-#### Solidity Version
-
-```javascript
-solidity: '0.8.28',
-```
-
-The Solidity compiler version we'll use for our contracts.
-
-#### Network Configuration
-
-```javascript
-networks: {
-  inj_testnet: {
-    url: process.env.INJ_TESTNET_RPC_URL || 'https://k8s.testnet.json-rpc.injective.network/',
-    accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-    chainId: 1439,
-    gas: 10000000,
-    gasPrice: 50000000000,
-  },
-}
-```
-
-* **url**: The RPC endpoint for Injective EVM testnet
-* **accounts**: Your wallet's private key (loaded from .env)
-* **chainId**: Injective EVM testnet chain ID (1439)
-* **gas**: Gas limit for transactions
-* **gasPrice**: Gas price in wei
-
-#### Contract Verification
-
-```javascript
-etherscan: {
-  apiKey: {
-    inj_testnet: 'nil',
-  },
-  customChains: [
-    {
-      network: 'inj_testnet',
-      chainId: 1439,
-      urls: {
-        apiURL: 'https://testnet.blockscout-api.injective.network/api',
-        browserURL: 'https://testnet.blockscout.injective.network/',
-      },
-    },
-  ],
-},
-```
-
-This configuration allows us to verify our contracts on BlockScout (Injective's block explorer) after deployment.
-
-### Setting Up Environment Variables
-
-Create a `.env` file in the contracts folder:
-
-Add your private key and rpc url:
-
-```env
-PRIVATE_KEY=your_private_key_here
-INJ_TESTNET_RPC_URL=https://k8s.testnet.json-rpc.injective.network/
-```
-
-**Important Security Notes:**
-
-1. **Never commit your `.env` file to git!** The template's `.gitignore` already excludes it
-2. **Use a testnet-only wallet** - Never use your mainnet wallet's private key
-3. **Get your private key from MetaMask**:
-   * Open MetaMask
-   * Click the three dots → Account Details → Export Private Key
-   * Enter your password and copy the key
-
-### Getting Testnet Tokens
-
-Before you can deploy and test, you'll need testnet tokens:
-
-1. **Get testnet INJ**: Visit the [Injective testnet faucet](https://testnet.faucet.injective.network/)
-2. **Get testnet wINJ**:
-   * Use the wINJ contract's `deposit()` function to wrap your INJ
-   * Or interact with it through a testnet interface on the explorer
-
-Now we're ready to write our contract!
 
 ---
 
 ## Writing the Vault Contract
 
-Navigate to the `contract/contracts` folder and create a new file called `SavingsVault.sol`:
+Navigate to the `contract/contracts` folder and create a new file called `SavingsVault.sol`.
 
 Here's our complete vault contract:
+
+<details>
+<summary>Click to view complete SavingsVault.sol</summary>
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -204,6 +65,8 @@ contract SavingsVault {
     }
 }
 ```
+
+</details>
 
 ### Understanding the Contract
 
@@ -324,15 +187,14 @@ Compiled 1 Solidity file successfully
 
 If you see any errors, double-check your code matches exactly.
 
-Now that we have our contract written and compiled, we need to test it!
-
 ---
 
 ## Testing Our Contracts
 
 Now let's write tests to make sure our vault works correctly. Create a new file `test/SavingsVault.test.js`:
 
-Here's our test suite:
+<details>
+<summary>Click to view complete test file</summary>
 
 ```javascript
 const { expect } = require("chai");
@@ -386,6 +248,8 @@ describe("SavingsVault", function () {
   });
 });
 ```
+
+</details>
 
 ### Understanding the Tests
 
@@ -526,6 +390,9 @@ Now that our contract is tested and working, let's deploy it to Injective EVM te
 
 Create a new file `scripts/deploy.js`:
 
+<details>
+<summary>Click to view complete deploy.js</summary>
+
 ```javascript
 async function main() {
     const network = await ethers.provider.getNetwork();
@@ -571,6 +438,8 @@ main()
         process.exitCode = 1;
     });
 ```
+
+</details>
 
 ### Understanding the Deployment Script
 
@@ -628,16 +497,6 @@ const address = await savingsVault.getAddress();
 ```
 
 We wait for the transaction to be mined and get the deployed contract address.
-
-### Adding wINJ Address to .env
-
-Update your `.env` file to include the wINJ address:
-
-```env
-PRIVATE_KEY=your_private_key_here
-INJ_TESTNET_RPC_URL=https://k8s.testnet.json-rpc.injective.network/
-WINJ_ADDRESS=0x0000000088827d2d103ee2d9A6b781773AE03FfB
-```
 
 ### Running the Deployment
 
@@ -706,7 +565,7 @@ You should see:
 * Source code visible under "Code" tab
 * Read/Write contract functions available
 
-**Congratulations!** Your vault contract is now live on Injective EVM testnet.
+**Congratulations!** Your vault contract is now live on Injective EVM testnet. 
 
 ---
 
@@ -717,10 +576,9 @@ Now that your smart contract is deployed and verified, you're ready to build the
 **[Continue to Part 2: Frontend Development →](TUTORIAL-FRONTEND.md)**
 
 In Part 2, we'll:
-
-* Set up a React app with TypeScript
+* Build the React UI
 * Connect to MetaMask
 * Interact with your deployed vault contract
-* Build a complete user interface
+* Create a complete user interface
 
 Let's make this vault accessible to users!

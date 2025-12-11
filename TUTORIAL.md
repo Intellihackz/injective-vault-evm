@@ -87,9 +87,11 @@ Let me quickly break down what we're building:
 * MetaMask - Handles wallet connection and transaction signing
 * BlockScout Explorer - For viewing transactions and verifying contracts
 
+---
+
 ## Project Setup
 
-Before we dive into smart contracts or frontend code, let's set up our project structure properly. We'll create a parent folder that contains both our contracts and frontend as separate packages.
+Before we dive into coding, let's set up our complete project structure. We'll create both the contract and frontend folders right now, so when you start the actual development tutorials, you can jump straight into coding without any setup friction.
 
 ### Creating the Project Structure
 
@@ -100,19 +102,218 @@ mkdir injective-vault
 cd injective-vault
 ```
 
-Your project will eventually have this structure:
+### Setting Up the Contract Folder
+
+Now let's set up the contract folder using Injective's Hardhat template:
+
+```bash
+git clone https://github.com/InjectiveLabs/injective-hardhat-template.git contract
+cd contract
+npm install --force
+```
+
+This gives us a pre-configured Hardhat setup optimized for Injective EVM, including:
+
+* Hardhat configuration for Injective networks
+* Sample contract structure
+* Testing setup
+* Deployment scripts
+
+### Understanding the Hardhat Configuration
+
+The cloned template already comes with a configured `hardhat.config.js` file. Let's understand what each part does:
+
+<details>
+<summary>Click to view hardhat.config.js</summary>
+
+```javascript
+require('@nomicfoundation/hardhat-toolbox');
+require('dotenv').config();
+
+/** @type import('hardhat/config').HardhatUserConfig */
+module.exports = {
+  solidity: '0.8.28',
+  networks: {
+    inj_testnet: {
+      url: process.env.INJ_TESTNET_RPC_URL || 'https://k8s.testnet.json-rpc.injective.network/',
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      chainId: 1439,
+      gas: 10000000,
+      gasPrice: 50000000000,
+    },
+  },
+  etherscan: {
+    apiKey: {
+      inj_testnet: 'nil',
+    },
+    customChains: [
+      {
+        network: 'inj_testnet',
+        chainId: 1439,
+        urls: {
+          apiURL: 'https://testnet.blockscout-api.injective.network/api',
+          browserURL: 'https://testnet.blockscout.injective.network/',
+        },
+      },
+    ],
+  },
+  sourcify: {
+    enabled: false,
+  },
+};
+```
+
+</details>
+
+### Configuration Breakdown
+
+#### Solidity Version
+
+```javascript
+solidity: '0.8.28',
+```
+
+The Solidity compiler version we'll use for our contracts.
+
+#### Network Configuration
+
+```javascript
+networks: {
+  inj_testnet: {
+    url: process.env.INJ_TESTNET_RPC_URL || 'https://k8s.testnet.json-rpc.injective.network/',
+    accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+    chainId: 1439,
+    gas: 10000000,
+    gasPrice: 50000000000,
+  },
+}
+```
+
+* **url**: The RPC endpoint for Injective EVM testnet
+* **accounts**: Your wallet's private key (loaded from .env)
+* **chainId**: Injective EVM testnet chain ID (1439)
+* **gas**: Gas limit for transactions
+* **gasPrice**: Gas price in wei
+
+#### Contract Verification
+
+```javascript
+etherscan: {
+  apiKey: {
+    inj_testnet: 'nil',
+  },
+  customChains: [
+    {
+      network: 'inj_testnet',
+      chainId: 1439,
+      urls: {
+        apiURL: 'https://testnet.blockscout-api.injective.network/api',
+        browserURL: 'https://testnet.blockscout.injective.network/',
+      },
+    },
+  ],
+},
+```
+
+This configuration allows us to verify our contracts on BlockScout (Injective's block explorer) after deployment.
+
+### Setting Up Environment Variables
+
+Create a `.env` file in the contracts folder:
+
+Add your private key and rpc url:
+
+```env
+PRIVATE_KEY=your_private_key_here
+INJ_TESTNET_RPC_URL=https://k8s.testnet.json-rpc.injective.network/
+WINJ_ADDRESS=0x0000000088827d2d103ee2d9A6b781773AE03FfB
+```
+
+**Important Security Notes:**
+
+1. **Never commit your `.env` file to git!** The template's `.gitignore` already excludes it
+2. **Use a testnet-only wallet** - Never use your mainnet wallet's private key
+3. **Get your private key from MetaMask**:
+   * Open MetaMask
+   * Click the three dots → Account Details → Export Private Key
+   * Enter your password and copy the key
+
+### Getting Testnet Tokens
+
+Before you can deploy and test, you'll need testnet tokens:
+
+1. **Get testnet INJ**: Visit the [Injective testnet faucet](https://testnet.faucet.injective.network/)
+2. **Get testnet wINJ**:
+   * interact with it through a testnet interface on the explorer
+
+### Setting Up the Frontend Folder
+
+Now let's set up the React frontend. Navigate back to the root folder and create the frontend:
+
+```bash
+cd ..  # Go back to injective-vault folder
+npm create vite@latest frontend
+```
+
+When prompted by Vite:
+
+* **Select a framework:** Choose `React`
+* **Select a variant:** Choose `TypeScript`
+
+Now install dependencies:
+
+```bash
+cd frontend
+npm install
+npm install ethers
+```
+
+This creates a new React app with TypeScript support and installs ethers.js for blockchain interactions.
+
+### Final Project Structure
+
+Your complete project structure should now look like this:
 
 ```bash
 injective-vault/
-├── contract/          # Smart contracts (Part 1)
-└── frontend/          # React app (Part 2)
+├── contract/              # Smart contract development
+│   ├── contracts/         # Solidity contracts go here
+│   ├── scripts/           # Deployment scripts
+│   ├── test/              # Contract tests
+│   ├── hardhat.config.js  # Hardhat configuration
+│   ├── .env               # Environment variables (private keys)
+│   └── package.json
+│
+└── frontend/              # React frontend
+    ├── src/
+    │   ├── App.tsx        # Main app component (we'll build this)
+    │   ├── App.css        # Styling
+    │   └── abis/          # Contract ABIs (we'll create this)
+    ├── public/
+    └── package.json
 ```
+
+---
 
 ## Next Steps
 
-Now that your project is set up, you're ready to start building:
+Congratulations! Your development environment is now completely set up. You have:
 
-1. **[Continue to Part 1: Smart Contract Development →](TUTORIAL-contract.md)**
-   * Write the Vault contract
-   * Test the contract
-   * Deploy to testnet
+✅ Both contract and frontend folders created  
+✅ All dependencies installed  
+✅ Hardhat configured for Injective EVM  
+✅ Environment variables ready  
+✅ Project structure organized
+
+Now you can jump straight into development without any setup interruptions!
+
+**[Start with Part 1: Smart Contract Development →](TUTORIAL-CONTRACT.md)**
+
+* Write the SavingsVault contract
+* Test the contract
+* Deploy to Injective EVM testnet
+* Verify your contract
+
+tutorials assume your environment is already set up, so you can focus purely on coding!
+
+Let's build something awesome!

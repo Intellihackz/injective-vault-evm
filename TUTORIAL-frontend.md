@@ -1,63 +1,34 @@
 # Part 2: Frontend Development
 
-Now that our smart contract is deployed and verified, let's build a beautiful React frontend that allows users to interact with our vault through their MetaMask wallet.
+Welcome to the frontend development section! Your environment is already set up from the main tutorial, so we can jump straight into building the UI and connecting to our smart contracts.
 
 ## Table of Contents
 
-* [Setting Up React with TypeScript](#setting-up-react-with-typescript)
 * [Building the UI](#building-the-ui)
 * [Connecting to MetaMask](#connecting-to-metamask)
 * [Implementing INJ Transfers](#implementing-inj-transfers)
 * [Working with the wINJ Token Contract](#working-with-the-winj-token-contract)
 * [Interacting with the Vault Contract](#interacting-with-the-vault-contract)
 
-## Setting Up React with TypeScript
-
-Navigate back to the root of your project (the `injective-vault` folder) and create the frontend:
-
-```bash
-cd ..  # Go back to injective-vault folder
-npm create vite@latest frontend
-cd frontend
-npm install ethers
-```
-
-When prompted by Vite:
-
-* Select "React" as the framework
-* Select "TypeScript" as the variant
-
-This creates a new React app with TypeScript support and installs ethers.js for blockchain interactions.
-
-Your project structure should now look like:
-
-```bash
-injective-vault/
-├── contract/          # Smart contracts (done!)
-└── frontend/          # React app (we're here)
-```
-
-### Project Structure
-
-Let's organize our frontend properly. Here's the structure we'll create:
-
-```bash
-frontend/
-├── src/
-│   ├── App.tsx         # Main app component
-│   ├── App.css         # Styling
-│   └── abis/           # Contract ABIs
-│       ├── SavingsVault.json
-│       └── wINJ.json
-├── public/
-└── package.json
-```
-
 ---
 
 ## Building the UI
 
 We'll start by building the complete user interface with mock data and state management, then add blockchain functionality later.
+
+### Project Structure
+
+Your frontend folder should have this structure:
+
+```
+frontend/
+├── src/
+│   ├── App.tsx         # Main app component (we'll build this)
+│   ├── App.css         # Styling
+│   └── abis/           # Contract ABIs (we'll create this later)
+├── public/
+└── package.json
+```
 
 ### Setting Up TypeScript Interfaces
 
@@ -130,6 +101,9 @@ Right now these are just placeholder functions that log to the console. We'll im
 ### Building the UI Structure
 
 Now let's create the complete UI:
+
+<details>
+<summary>Click to view complete App component JSX</summary>
 
 ```typescript
   return (
@@ -215,6 +189,8 @@ Now let's create the complete UI:
 export default App;
 ```
 
+</details>
+
 ### Understanding the UI Components
 
 Let's break down what we've built:
@@ -247,7 +223,7 @@ Let's break down what we've built:
 
 ### Adding the CSS
 
-Our app needs styling to look good. Rather than typing out hundreds of lines of CSS, you can copy the complete stylesheet from the repository.
+Our app needs styling to look good. Copy the complete stylesheet from the repository.
 
 **Copy the CSS from the repository:**
 
@@ -287,20 +263,6 @@ Everything works visually, but nothing is connected to the blockchain yet. In th
 
 Now let's replace our mock wallet connection with real MetaMask integration.
 
-First, install ethers.js if you haven't already:
-
-```bash
-npm install ethers
-```
-
-Now update the imports in `App.tsx`:
-
-```typescript
-import { useState } from "react";
-import "./App.css";
-import { BrowserProvider } from "ethers";
-```
-
 ### Adding TypeScript Declaration
 
 MetaMask adds `window.ethereum`, but TypeScript doesn't know about it. Add this declaration at the top of your file (after imports):
@@ -311,6 +273,14 @@ declare global {
     ethereum?: any;
   }
 }
+```
+
+Update the imports in `App.tsx`:
+
+```typescript
+import { useState } from "react";
+import "./App.css";
+import { BrowserProvider } from "ethers";
 ```
 
 ### Network Configuration
@@ -336,6 +306,9 @@ This configuration tells MetaMask how to connect to Injective EVM testnet.
 ### Implementing the Wallet Connection
 
 Now let's write the function that connects to MetaMask and switches to Injective EVM:
+
+<details>
+<summary>Click to view complete connectMetaMask function</summary>
 
 ```typescript
 const connectMetaMask = async () => {
@@ -392,6 +365,8 @@ const connectMetaMask = async () => {
   }
 };
 ```
+
+</details>
 
 ### Understanding the Connection Flow
 
@@ -529,7 +504,7 @@ You now have a real wallet connection!
 
 Before we connect to our vault contract, let's implement basic INJ transfers. This will help us understand how transactions work and give users feedback on transaction status.
 
-First, we need to import more functions from ethers:
+Update your imports to include more ethers functions:
 
 ```typescript
 import { BrowserProvider, parseEther, formatEther } from "ethers";
@@ -572,6 +547,9 @@ const [txStatus, setTxStatus] = useState<TransactionStatus>({
 ### Implementing the Transfer Function
 
 Now replace the mock `handleTransfer` with the real implementation:
+
+<details>
+<summary>Click to view complete handleTransfer function</summary>
 
 ```typescript
 const handleTransfer = async () => {
@@ -640,6 +618,8 @@ const handleTransfer = async () => {
   }
 };
 ```
+
+</details>
 
 ### Understanding the Transfer Flow
 
@@ -772,8 +752,6 @@ The ABI includes all the functions we need:
 * **approve**: Approve a contract to spend tokens
 * **transfer**: Transfer tokens to another address
 * **allowance**: Check how much a contract is approved to spend
-* **deposit**: Wrap INJ into wINJ
-* **withdraw**: Unwrap wINJ back to INJ
 
 ### Adding Contract Addresses
 
@@ -928,6 +906,9 @@ The modal:
 
 Now let's create the approval function:
 
+<details>
+<summary>Click to view complete handleApprove function</summary>
+
 ```typescript
 const handleApprove = async () => {
   if (!walletAddress) {
@@ -981,6 +962,8 @@ const handleApprove = async () => {
 };
 ```
 
+</details>
+
 **Understanding the Approval Amount:**
 We approve a large amount (1 million wINJ) so users don't need to approve every time they deposit. This is a common pattern in DApps to improve user experience.
 
@@ -1024,6 +1007,9 @@ Now the modal only shows if the user hasn't approved the vault before!
 ### Implementing wINJ Transfers
 
 Update your `handleTransfer` function to support wINJ transfers when the wINJ tab is active:
+
+<details>
+<summary>Click to view complete handleTransfer with wINJ support</summary>
 
 ```typescript
 const handleTransfer = async () => {
@@ -1124,6 +1110,8 @@ const handleTransfer = async () => {
 };
 ```
 
+</details>
+
 ### Displaying wINJ Balance in the UI
 
 Update your UI to show both INJ and wINJ balances in the header:
@@ -1179,7 +1167,6 @@ const addWINJToWallet = async () => {
 ```
 
 This function:
-
 * Uses MetaMask's `wallet_watchAsset` method
 * Specifies the token details (address, symbol, decimals)
 * Opens MetaMask to let the user confirm adding the token
@@ -1258,7 +1245,7 @@ Now that we can work with wINJ tokens, let's connect to our deployed SavingsVaul
 
 When we compiled our SavingsVault contract with Hardhat, it automatically generated an ABI file. This ABI is located at:
 
-```bash
+```
 contract/artifacts/contracts/SavingsVault.sol/SavingsVault.json
 ```
 
@@ -1349,6 +1336,9 @@ Your complete `handleConnect` should now fetch:
 
 Now let's implement the real deposit functionality:
 
+<details>
+<summary>Click to view complete handleDeposit function</summary>
+
 ```typescript
 const handleDeposit = async () => {
   if (!vaultAmount) {
@@ -1410,9 +1400,14 @@ const handleDeposit = async () => {
 };
 ```
 
+</details>
+
 ### Implementing the Withdraw Function
 
 Similarly, implement the withdraw functionality:
+
+<details>
+<summary>Click to view complete handleWithdraw function</summary>
 
 ```typescript
 const handleWithdraw = async () => {
@@ -1474,6 +1469,8 @@ const handleWithdraw = async () => {
   }
 };
 ```
+
+</details>
 
 ### Updating the UI for Vault Operations
 
@@ -1558,7 +1555,6 @@ You should see:
 ## Congratulations! 🎉
 
 You've successfully built a complete savings vault DApp on Injective EVM!
-![Final UI](./assets/./final-app.png)
 
 ### Resources
 
