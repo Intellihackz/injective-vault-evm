@@ -112,14 +112,7 @@ injective-vault/
 
 Now that your project is set up, you're ready to start building:
 
-1. **[Continue to Part 1: Smart Contract Development →](TUTORIAL-CONTRACT.md)**
+1. **[Continue to Part 1: Smart Contract Development →](TUTORIAL-contract.md)**
    * Write the Vault contract
    * Test the contract
    * Deploy to testnet
-
-2. **[Skip to Part 2: Frontend Development →](TUTORIAL-FRONTEND.md)**
-   * Build the React UI
-   * Connect to MetaMask
-   * Interact with contracts
-
-Choose where you want to start, and let's build something awesome!
