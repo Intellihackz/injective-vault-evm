@@ -573,7 +573,7 @@ You should see:
 
 Now that your smart contract is deployed and verified, you're ready to build the frontend!
 
-**[Continue to Part 2: Frontend Development →](TUTORIAL-fronted.md)**
+**[Continue to Part 2: Frontend Development →](2-frontend.md)**
 
 In Part 2, we'll:
 * Build the React UI

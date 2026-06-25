@@ -307,7 +307,7 @@ Congratulations! Your development environment is now completely set up. You have
 
 Now you can jump straight into development without any setup interruptions!
 
-**[Start with Part 1: Smart Contract Development →](TUTORIAL-contract.md)**
+**[Start with Part 1: Smart Contract Development →](1-contract.md)**
 
 * Write the SavingsVault contract
 * Test the contract

@@ -208,7 +208,10 @@ injective-vault/
 │   └── package.json
 ├── assets/
 │   └── architecture.png           # Architecture diagram
-├── Tutorial.md                     # Step-by-step tutorial
+├── tutorial/
+│   ├── 0-setup.md                 # Setup & Introduction
+│   ├── 1-contract.md              # Smart Contract
+│   └── 2-frontend.md              # Frontend Application
 └── README.md                       # This file
 ```
 
