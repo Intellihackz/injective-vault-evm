@@ -1,44 +1,44 @@
-# 🏦 Injective Savings Vault
+# Injective Savings Vault
 
 A decentralized savings vault application built on the Injective EVM testnet, allowing users to securely deposit and withdraw wrapped INJ (wINJ) tokens while maintaining full control of their assets.
 
 ![Injective Vault Architecture](./assets/./final-ui.png)
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#-overview)
 - [Features](#-features)
-- [Architecture](#️-architecture)
-- [Tech Stack](#️-tech-stack)
+- [Architecture](#-architecture)
+- [Tech Stack](#-tech-stack)
 - [Prerequisites](#-prerequisites)
 - [Installation](#-installation)
 - [Usage](#-usage)
 - [Smart Contract](#-smart-contract)
 - [Project Structure](#-project-structure)
 
-## 🌟 Overview
+## Overview
 
 The Injective Savings Vault is a full-stack decentralized application (dApp) that demonstrates secure asset management on the Injective EVM. Users can deposit wINJ tokens into a smart contract vault, track their balance, and withdraw funds at any time. The application also includes functionality for transferring both native INJ and wINJ tokens.
 
-## ✨ Features
+## Features
 
 ### Core Functionality
 
-- 💰 **Secure Deposits**: Deposit wINJ tokens into your personal vault
-- 💸 **Instant Withdrawals**: Withdraw your funds at any time with no lockup period
-- 📊 **Balance Tracking**: Real-time display of your vault balance
-- 🔄 **Token Transfers**: Send INJ or wINJ to any address
-- 🔐 **MetaMask Integration**: Seamless wallet connection and transaction signing
+- **Secure Deposits**: Deposit wINJ tokens into your personal vault
+- **Instant Withdrawals**: Withdraw your funds at any time with no lockup period
+- **Balance Tracking**: Real-time display of your vault balance
+- **Token Transfers**: Send INJ or wINJ to any address
+- **MetaMask Integration**: Seamless wallet connection and transaction signing
 
 ### User Experience
 
-- 🎨 Modern, intuitive UI built with React and TypeScript
-- ⚡ Real-time balance updates after each transaction
-- 📱 Responsive design for desktop and mobile
-- 🔔 Transaction status notifications with explorer links
-- 🪙 One-click wINJ token addition to MetaMask
+- Modern, intuitive UI built with React and TypeScript
+- Real-time balance updates after each transaction
+- Responsive design for desktop and mobile
+- Transaction status notifications with explorer links
+- One-click wINJ token addition to MetaMask
 
-## 🏗️ Architecture
+## Architecture
 
 The project consists of three main components:
 
@@ -58,7 +58,7 @@ User Wallet → Approve wINJ → Deposit to Vault → Track Balance → Withdraw
 4. Vault contract tracks individual balances using a mapping
 5. User can withdraw any or all of their balance at any time
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Smart Contract
 
@@ -79,7 +79,7 @@ User Wallet → Approve wINJ → Deposit to Vault → Track Balance → Withdraw
 - Chain ID: `0x59f` (1439)
 - RPC: `https://k8s.testnet.json-rpc.injective.network/`
 
-## 📦 Prerequisites
+## Prerequisites
 
 Before you begin, ensure you have the following installed:
 
@@ -93,7 +93,7 @@ You'll also need:
 - Test INJ tokens from the [Injective Testnet Faucet](https://testnet.faucet.injective.network/)
 - wINJ tokens (wrapped INJ)
 
-## 🚀 Installation
+## Installation
 
 ### 1. Clone the Repository
 
@@ -125,9 +125,9 @@ PRIVATE_KEY=your_wallet_private_key_here
 INJECTIVE_RPC_URL=https://k8s.testnet.json-rpc.injective.network/
 ```
 
-> ⚠️ **Security Warning**: Never commit your `.env` file or share your private key!
+>  **Security Warning**: Never commit your `.env` file or share your private key!
 
-## 💻 Usage
+## Usage
 
 ### Compile Smart Contracts
 
@@ -185,7 +185,7 @@ The application will be available at `http://localhost:5173`
 3. Click "Transfer"
 4. Confirm the transaction
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 injective-vault/
@@ -215,14 +215,14 @@ injective-vault/
 └── README.md                       # This file
 ```
 
-## 🔍 Key Files
+## Key Files
 
 - **`contract/contracts/SavingsVault.sol`**: The vault smart contract
 - **`frontend/src/App.tsx`**: React application with wallet integration
 - **`contract/scripts/deploy.js`**: Contract deployment script
 - **`contract/hardhat.config.js`**: Network and compiler configuration
 
-## 🧪 Testing
+## Testing
 
 Run contract tests:
 
@@ -231,7 +231,7 @@ cd contract
 npx hardhat test --network inj_testnet
 ```
 
-## 🌐 Network Configuration
+## Network Configuration
 
 ### Injective EVM Testnet
 
@@ -244,4 +244,4 @@ npx hardhat test --network inj_testnet
 
 The application will automatically prompt you to add the Injective EVM testnet to MetaMask on first connection.
 
-Built with ❤️ on Injective EVM
+Built with  on Injective EVM
